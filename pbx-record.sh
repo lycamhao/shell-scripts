@@ -23,7 +23,7 @@ callAPI() {
   local method=$2
   local data=$3
   local token=$4
-  curl -s --cacert "$CACERT_PATH" -X "$method" "$url" \
+  curl -k -s --cacert "$CACERT_PATH" -X "$method" "$url" \
     -H "Content-Type: application/json" \
     -H "Host: rsv01.oncall.vn" \
     ${token:+-H "Authorization: Bearer $token"} \
@@ -82,14 +82,15 @@ downloadRecords() {
     fi
     id=$(echo $temp | awk -F ',' '{print $1}' | awk -F ':' '{print $2}' | tr -d '"')
     caller=$(echo $temp | awk -F ',' '{print $2}' | awk -F ':' '{print $2}' | tr -d '"')
-    callee=$(echo $temp | awk -F ',' '{print $3}' | awk -F ':' '{print $2}' | tr -d '"')
-    calleeFolder="$(grep $callee "./input.csv" | awk -F ',' '{print $1"/"$2"/"$3}')"
+    # callee=$(echo $temp | awk -F ',' '{print $3}' | awk -F ':' '{print $2}' | tr -d '"')
+    # calleeFolder="$(grep $callee "./input.csv" | awk -F ',' '{print $1"/"$2"/"$3}')"
     callerFolder="$(grep $caller "./input.csv" | awk -F ',' '{print $1"/"$2"/"$3}')"
-    calleeFolder="$DOWNLOAD_DIR/$calleeFolder"
+    # calleeFolder="$DOWNLOAD_DIR/$calleeFolder"
     callerFolder="$DOWNLOAD_DIR/$callerFolder"
     response=$(callAPI "$RECORDINGS_URL/$id" "GET" "$payload" "$bearerToken")
     fileID=$(echo $response | tr -d '{"' | awk -F ',' '{print $5}' | awk -F ':' '{print $2}')
-    curl -s --cacert ./certificate.pem "$BASE_URL/blobs/$fileID" --output "$DOWNLOAD_DIR/$id.wav"
+    echo $response
+    # curl -s --cacert ./certificate.pem "$BASE_URL/blobs/$fileID" --output "$DOWNLOAD_DIR/$id.wav"
   done
 }
 downloadRecords
