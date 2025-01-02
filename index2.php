@@ -6,6 +6,7 @@
   define("BASE_DIR","\\\\10.165.96.12\\SWB\\PBX-Records\\");
   define("CSV_FILE","D:\\Haolc\\Devops\\shell-scripts\\input.csv");
   define("CERTIFICATE_FILE","D:\\Haolc\\Devops\\shell-scripts\\certificate.pem");
+  
   //Call API function
   function callAPI($url,$method,$dataToSend,$token='',$isReturned=true,$isVerbose=true)
   {
@@ -95,6 +96,9 @@
       if ($caller >= '1001' && $caller <= '1040')
       {
           $filename = 'OUTBOUND_from_'.$caller.'_to_'.$callee.'_'.$namePart[4];
+          if ($callee == "*57") {
+            $filename = 'OUTBOUND_from_'.$caller.'_to_VOICEMAIL_'.$namePart[4];
+          }
       }
       else
       {
@@ -181,24 +185,28 @@
           return ($item);
         });
         $date = explode('T',$file['started_at']);
+        $namePart = array_values(array_filter(explode('_',$file['filename'])));
         $caller = $file['caller'];
         $callee = $file['callee'];
-        $namePart = array_values(array_filter(explode('_',$file['filename'])));
         $parentFolder = getParentFolderFromCSV(CSV_FILE,$namePart[2]);
         $childFolder = $namePart[2];
-        $saveToPath = BASE_DIR."$parentFolder\\$childFolder\\";
-        createFolder($saveToPath,$date[0]);
-        $saveToPath .= $date[0];
-        $recordFileUrl = "https://rsv01.oncall.vn:8887/api/files/{$file['file_id']}/data";
-        $filename = filenameGenerate($caller,$callee,$namePart);
-        $saveToPath = $saveToPath."\\".$filename;
-        $WAVContent = callAPI($recordFileUrl,'GET','','',true,true);
-        $fopen = fopen($saveToPath,'w');
-        fwrite($fopen,$WAVContent);
-        fclose($fopen);
-        sleep(2);
+        if ($parentFolder != 0)
+        {
+          $saveToPath = BASE_DIR."$parentFolder\\$childFolder\\";
+          createFolder($saveToPath,$date[0]);
+          $recordFileUrl = "https://rsv01.oncall.vn:8887/api/files/{$file['file_id']}/data";
+          $filename = filenameGenerate($caller,$callee,$namePart);
+          $saveToPath .= $date[0];
+          $saveToPath = $saveToPath."\\".$filename;
+          $WAVContent = callAPI($recordFileUrl,'GET','','',true,true);
+          $fopen = fopen($saveToPath,'w');
+          fwrite($fopen,$WAVContent);
+          fclose($fopen);
+          sleep(2);
+        }
+        // echo $saveToPath. "\n";
       }
     }
   }   
-  downloadRecord("all",BASE_DIR);
+  downloadRecord("today",BASE_DIR);
 ?>
