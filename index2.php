@@ -41,29 +41,6 @@
     }
   }
 
-  function readCSVFile($csvFile,$limit=1000,$delim=',')
-  {
-    if (($handle = fopen($csvFile, 'r')) !== false) 
-    {
-      while (($data = fgetcsv($handle, 1000, ",")) !== false) 
-      {
-        foreach ($data as $key => $value) 
-        {
-          if ($key == 1)
-          {
-            createFolder(BASE_DIR,"{$data[0]}_{$data[1]}");
-          }
-          if ($key > 2)
-          {
-            createFolder(BASE_DIR."{$data[0]}_{$data[1]}\\",$value);
-            createFolder(BASE_DIR."{$data[0]}_{$data[1]}\\{$value}\\",$date);
-          }
-        }
-      }
-      fclose($handle);
-      return 0;
-    }
-  }
   function createFolderFromCSVFile($csvFile,$date="")
   {
     if (($handle = fopen($csvFile, 'r')) !== false) 

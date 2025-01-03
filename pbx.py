@@ -3,13 +3,13 @@ import requests
 import csv 
 import json
 import datetime
+from urllib.request import urlretrieve
 
 BASE_URL="https://rsv01.oncall.vn:8887/api/"
 RECORDINGS_URL=BASE_URL+"recordings"
-BASE_DIR="\\\\10.165.96.12\\SWB\\PBX-Records"
-BASE_DIR_2="D:\\PBXRecord\\"
+BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
 CSV_FILE="input.csv"
-CERTIFICATE_FILE="certificate.cer"
+CERTIFICATE_FILE="certificate.pem"
 
 def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
     headerData = {
@@ -26,8 +26,8 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
             url=url,
             headers=headerData,
             json=dataToSend if dataToSend else None,
-            verify=False
-            # cert=CERTIFICATE_FILE
+            verify=False,
+            stream=True,
         )
 
     except requests.exceptions.RequestException as e:
@@ -36,9 +36,9 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
         return None 
     
     if isReturned:
-        respone.raise_for_status()
-        return respone.text
-
+        result = respone.text
+        return result
+    
 def today():
     today = datetime.date.today()
     return today
@@ -68,8 +68,9 @@ def getRecordFileInfo(id,token):
     fileInfo = callAPI(url,'GET',False,token,True,True)
     return json.loads(fileInfo)
 
-def createFolder(path,folderName):
-    return 0
+def createFolder(folderName):
+    if os.path.exists(folderName) != True:
+        os.mkdir(folderName)
 
 def readCSVFile(csvFile):
     returnArr = []
@@ -79,22 +80,44 @@ def readCSVFile(csvFile):
             returnArr.append(row)
         return returnArr
 
-def getParentFolderFromSearch(csvFile,search):
+def getParentFolder(csvFile,search=None):
     csvContent = readCSVFile(csvFile)
     for row in csvContent:
-        if search in row:
-            return f"{row[0]}-{row[1]}"
-        break
+        if (search != None) & (search in row):
+            return f"{row[0]}_{row[1]}"
 
+def createFolderFromCSV(csvFile):
+    csvContent = readCSVFile(csvFile)
+    for row in csvContent:
+        parentFolder = f"{row[0]}_{row[1]}"
+        createFolder(f"{BASE_DIR}\\{parentFolder}")
+        row=row[3:]
+        for item in row:
+            createFolder(f"{BASE_DIR}\\{parentFolder}\\{item}") 
+
+def genFileName(caller,callee,namePart):
+    if (int(caller) >= 1001) & (int(caller) <= 1040):
+        fileName = f"OUTBOUND_FROM_{caller}_to_{callee}_{namePart[4]}"
+        if callee == f"*57":
+            fileName = f"OUTBOUND_from_{caller}_to_VOICEMAIL_{namePart[4]}"
+    else:
+        fileName = f"INBOUND_FROM_{caller}_to_{namePart[2]}_{namePart[4]}"
+    return fileName 
+
+createFolderFromCSV(CSV_FILE)
 token = getTokenFromOnCall()
 items = getAllRecords(token)
 for item in items:
-    # print(f"{item['id']}\n")
-    fileInfo = getRecordFileInfo(item['id'],token)
-    fileInfo = fileInfo['items'][0]
-    fileName = fileInfo['file_name']
-    fileName = fileName.split('_')
-    fileName = list(filter(None,fileName))
-    childFolder = fileName[2]
-    parentFolder = getParentFolderFromSearch(CSV_FILE,childFolder)
-    print(f"{parentFolder}-{childFolder}")
+    fileInfo = getRecordFileInfo(item['id'],token)['items'][0]
+    fileDate = fileInfo['started_at'][0:10]
+    namePart = list(filter(None,fileInfo['file_name'].split('_')))
+    childFolder = namePart[2]
+    parentFolder = getParentFolder(CSV_FILE,childFolder)
+    if parentFolder:
+        fullpath = f"{BASE_DIR}\\{parentFolder}\\{childFolder}\\{fileDate}"
+        createFolder(fullpath)
+        caller = fileInfo['caller']
+        callee = fileInfo['callee']
+        filename = f"{fullpath}\\{genFileName(caller,callee,namePart)}"
+        recordFileUrl = f"https://rsv01.oncall.vn:8887/api/files/{fileInfo['file_id']}/data"
+        WAVContent = urlretrieve(recordFileUrl,filename)
