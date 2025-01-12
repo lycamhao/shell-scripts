@@ -3,23 +3,17 @@ import requests
 import csv 
 import json
 import datetime
-# import paramiko
-from urllib.request import urlretrieve
-import urllib3
-import certifi
 import logging
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-import ssl
-ssl._create_default_https_context = ssl._create_unverified_context
 logging.basicConfig(level=logging.DEBUG)
 
 BASE_URL="https://rsv01.oncall.vn:8887/api/"
 RECORDINGS_URL=BASE_URL+"recordings"
 BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
 CSV_FILE="input.csv"
-CERTIFICATE_FILE="D:\\Devops\\shell-scripts\\certificate.pem"
+CERTIFICATE_FILE="D:\\Devops\\shell-scripts\\python-oncall.pem"
+TODAY = False
 
-def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
+def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,download=False):
     headerData = {
         'Content-Type': 'application/json',
         'Host': 'rsv01.oncall.vn'
@@ -34,7 +28,8 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
             url=url,
             headers=headerData,
             json=dataToSend if dataToSend else None,
-            verify=False
+            verify=CERTIFICATE_FILE,
+            stream=True if download else None
         )
 
     except requests.exceptions.RequestException as e:
@@ -44,8 +39,10 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
     
     if isReturned:
         result = respone.text
+        if download:
+            result = respone.iter_content
         return result
-    
+
 def today():
     today = datetime.date.today()
     return today
@@ -112,9 +109,24 @@ def genFileName(caller,callee,namePart):
         fileName = f"INBOUND_FROM_{caller}_to_{namePart[2]}_{namePart[4]}"
     return fileName 
 
+def downloadFile(url, destination):
+    try:
+        with requests.get(url, stream=True, verify=CERTIFICATE_FILE) as response:
+            response.raise_for_status()
+            with open(destination, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        print("File downloaded successfully!")
+    except requests.exceptions.RequestException as e:
+        print("Error downloading the file:", e)
+
 createFolderFromCSV(CSV_FILE)
 token = getTokenFromOnCall()
 items = getAllRecords(token)
+
+if TODAY:
+    items = getTodayRecord(token)
+
 for item in items:
     fileInfo = getRecordFileInfo(item['id'],token)['items'][0]
     fileDate = fileInfo['started_at'][0:10]
@@ -128,4 +140,4 @@ for item in items:
         callee = fileInfo['callee']
         filename = f"{fullpath}\\{genFileName(caller,callee,namePart)}"
         recordFileUrl = f"https://rsv01.oncall.vn:8887/api/files/{fileInfo['file_id']}/data"
-        WAVContent = urlretrieve(recordFileUrl,filename)
+        downloadFile(recordFileUrl, filename)
