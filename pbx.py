@@ -3,13 +3,21 @@ import requests
 import csv 
 import json
 import datetime
+# import paramiko
 from urllib.request import urlretrieve
+import urllib3
+import certifi
+import logging
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
+logging.basicConfig(level=logging.DEBUG)
 
 BASE_URL="https://rsv01.oncall.vn:8887/api/"
 RECORDINGS_URL=BASE_URL+"recordings"
 BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
 CSV_FILE="input.csv"
-CERTIFICATE_FILE="certificate.pem"
+CERTIFICATE_FILE="D:\\Devops\\shell-scripts\\certificate.pem"
 
 def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
     headerData = {
@@ -26,8 +34,7 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True):
             url=url,
             headers=headerData,
             json=dataToSend if dataToSend else None,
-            verify=False,
-            stream=True,
+            verify=False
         )
 
     except requests.exceptions.RequestException as e:
@@ -45,6 +52,7 @@ def today():
 
 def getTokenFromOnCall():
     url = BASE_URL+'tokens'
+    print(url)
     dataToSend = {
         'username'  : 'SGCX01177',
         'password'  : 'cathay@2024',
