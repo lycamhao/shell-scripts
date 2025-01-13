@@ -5,14 +5,14 @@ import json
 import datetime
 import logging
 logging.basicConfig(level=logging.DEBUG)
-
 BASE_URL="https://rsv01.oncall.vn:8887/api/"
 RECORDINGS_URL=BASE_URL+"recordings"
 BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
+CUR_DIR = os.path.abspath(__file__)
 CSV_FILE="input.csv"
 CERTIFICATE_FILE="python-oncall.pem"
 TODAY = False
-
+print(CUR_DIR)
 def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,proxies=False):
     headerData = {
         'Content-Type': 'application/json',
