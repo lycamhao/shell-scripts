@@ -10,10 +10,10 @@ BASE_URL="https://rsv01.oncall.vn:8887/api/"
 RECORDINGS_URL=BASE_URL+"recordings"
 BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
 CSV_FILE="input.csv"
-CERTIFICATE_FILE="D:\\Devops\\shell-scripts\\python-oncall.pem"
+CERTIFICATE_FILE="python-oncall.pem"
 TODAY = False
 
-def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,download=False):
+def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,proxies=False):
     headerData = {
         'Content-Type': 'application/json',
         'Host': 'rsv01.oncall.vn'
@@ -29,7 +29,7 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,dow
             headers=headerData,
             json=dataToSend if dataToSend else None,
             verify=CERTIFICATE_FILE,
-            stream=True if download else None
+            proxies={"http": None, "https": None}
         )
 
     except requests.exceptions.RequestException as e:
@@ -39,8 +39,6 @@ def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,dow
     
     if isReturned:
         result = respone.text
-        if download:
-            result = respone.iter_content
         return result
 
 def today():
@@ -111,7 +109,7 @@ def genFileName(caller,callee,namePart):
 
 def downloadFile(url, destination):
     try:
-        with requests.get(url, stream=True, verify=CERTIFICATE_FILE) as response:
+        with requests.get(url, stream=True, verify=CERTIFICATE_FILE,proxies={"http": None, "https": None}) as response:
             response.raise_for_status()
             with open(destination, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=8192):
