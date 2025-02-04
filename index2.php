@@ -208,5 +208,5 @@
       }
     }
   }   
-  downloadRecord("today",BASE_DIR);
+  downloadRecord("all",BASE_DIR);
 ?>

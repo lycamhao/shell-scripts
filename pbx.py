@@ -4,15 +4,38 @@ import csv
 import json
 import datetime
 import logging
-logging.basicConfig(level=logging.DEBUG)
-BASE_URL="https://rsv01.oncall.vn:8887/api/"
-RECORDINGS_URL=BASE_URL+"recordings"
-BASE_DIR="D:\\PBX-Records" #"\\\\10.165.96.12\\SWB\\PBX-Records"
-CUR_DIR = os.path.abspath(__file__)
-CSV_FILE="input.csv"
-CERTIFICATE_FILE="python-oncall.pem"
-TODAY = False
-print(CUR_DIR)
+import paramiko
+import time
+# logging.basicConfig(level=logging.DEBUG)
+
+##### SFTP #####
+SFTP_HOST = '10.165.96.12'
+SFTP_USER = 'user_rd'
+SFTP_PASSWD = 'Rec0rd@1ns'
+SFTP_PORT = 22
+SFTP_PATH = '/mnt/RAID1/SWB/user_rd/PBX-Records'
+##################
+
+##### Connect SFPT #####
+client = paramiko.SSHClient()
+client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+client.connect(hostname=SFTP_HOST,port=SFTP_PORT,username=SFTP_USER,password=SFTP_PASSWD)
+sftp_client = client.open_sftp()
+sftp_client.chdir(SFTP_PATH)
+########################
+
+DOWNLOAD_MODE       = "all"
+TRANSFER_PROTOCOL   = "SFTP" #SMB
+CURRENT_FILE        = os.path.abspath(__file__)
+CURRENT_DIR         = os.path.dirname(CURRENT_FILE)
+BASE_URL            = "https://rsv01.oncall.vn:8887/api/"
+RECORDINGS_URL      = BASE_URL+"recordings"
+CSV_FILE            = f"{CURRENT_DIR}/input.csv"
+CERTIFICATE_FILE    = f"{CURRENT_DIR}/python-oncall.pem"
+TEMP_FOLDER         = f"{CURRENT_DIR}/temp"
+HEADER              = {'Content-Type': 'application/json','Host': 'rsv01.oncall.vn'}
+BODY                = {'username': 'SGCX01177','password': 'cathay@2024','domain': 'sgcx01177.oncall'}
+
 def callAPI(url,method,dataToSend,token=False,isReturned=True,isVerbose=True,proxies=False):
     headerData = {
         'Content-Type': 'application/json',
@@ -47,7 +70,6 @@ def today():
 
 def getTokenFromOnCall():
     url = BASE_URL+'tokens'
-    print(url)
     dataToSend = {
         'username'  : 'SGCX01177',
         'password'  : 'cathay@2024',
@@ -73,7 +95,18 @@ def getRecordFileInfo(id,token):
 
 def createFolder(folderName):
     if os.path.exists(folderName) != True:
+        print(f"{fullpath}/{folderName} Not exist, created it")
         os.mkdir(folderName)
+
+def createSFTPFolder(fullpath,folderName):
+    if folderName not in sftp_client.listdir(fullpath):
+        # print(f"{fullpath}/{folderName} Not exist, created it")
+        sftp_client.mkdir(f"{fullpath}/{folderName}")
+
+def deleteExistentFile(fullpath,fileName):
+    if fileName in sftp_client.listdir(fullpath):
+        print(f"{filename} existed, delete it")
+        sftp_client.remove(f"{fullpath}/{fileName}")
 
 def readCSVFile(csvFile):
     returnArr = []
@@ -93,10 +126,12 @@ def createFolderFromCSV(csvFile):
     csvContent = readCSVFile(csvFile)
     for row in csvContent:
         parentFolder = f"{row[0]}_{row[1]}"
-        createFolder(f"{BASE_DIR}\\{parentFolder}")
+        # createFolder(f"{BASE_DIR}\\{parentFolder}")
+        createSFTPFolder(SFTP_PATH,parentFolder)
         row=row[3:]
         for item in row:
-            createFolder(f"{BASE_DIR}\\{parentFolder}\\{item}") 
+            # createFolder(f"{BASE_DIR}\\{parentFolder}\\{item}")
+            createSFTPFolder(f"{SFTP_PATH}/{parentFolder}",item)
 
 def genFileName(caller,callee,namePart):
     if (int(caller) >= 1001) & (int(caller) <= 1040):
@@ -118,11 +153,21 @@ def downloadFile(url, destination):
     except requests.exceptions.RequestException as e:
         print("Error downloading the file:", e)
 
+def downloadFileToSFTP(url, destination):
+    try:
+        with requests.get(url, stream=True, verify=CERTIFICATE_FILE,proxies={"http": None, "https": None}) as response:
+            response.raise_for_status()
+            temp_file_path = f"{TEMP_FOLDER}/{destination}"
+            with open(temp_file_path, 'wb') as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+    except requests.exceptions.RequestException as e:
+        print("Error downloading the file:", e)
+
 createFolderFromCSV(CSV_FILE)
 token = getTokenFromOnCall()
 items = getAllRecords(token)
-
-if TODAY:
+if DOWNLOAD_MODE == "today":
     items = getTodayRecord(token)
 
 for item in items:
@@ -132,10 +177,21 @@ for item in items:
     childFolder = namePart[2]
     parentFolder = getParentFolder(CSV_FILE,childFolder)
     if parentFolder:
-        fullpath = f"{BASE_DIR}\\{parentFolder}\\{childFolder}\\{fileDate}"
-        createFolder(fullpath)
+        # fullpath = f"{BASE_DIR}\\{parentFolder}\\{childFolder}\\{fileDate}"
+        # createFolder(fullpath)
+        fullpath = f"{SFTP_PATH}/{parentFolder}/{childFolder}"
+        folderName = fileDate
+        createSFTPFolder(fullpath,folderName)
         caller = fileInfo['caller']
         callee = fileInfo['callee']
-        filename = f"{fullpath}\\{genFileName(caller,callee,namePart)}"
+        # filename = f"{fullpath}\\{genFileName(caller,callee,namePart)}"
+        filename = f"{genFileName(caller,callee,namePart)}"
         recordFileUrl = f"https://rsv01.oncall.vn:8887/api/files/{fileInfo['file_id']}/data"
-        downloadFile(recordFileUrl, filename)
+        # downloadFile(recordFileUrl, filename)
+        downloadFileToSFTP(recordFileUrl, filename)
+        print(f"Begin download: {filename} downloaded to {TEMP_FOLDER}")
+        deleteExistentFile(f"{fullpath}/{fileDate}",filename)
+        sftp_client.put(f"{TEMP_FOLDER}/{filename}",f"{fullpath}/{fileDate}/{filename}")
+        print("File uploaded successfully!")
+        os.remove(f"{TEMP_FOLDER}/{filename}")
+        time.sleep(2)
