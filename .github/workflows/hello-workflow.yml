@@ -13,4 +13,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Print Hello
-        run: echo "Hello, Workflow!"
+        run: echo "Hello, Workflow on push!"
