@@ -9,8 +9,14 @@ jobs:
   say-hello:
     runs-on: self-hosted
     steps:
-      - name: Check out repository
+      - name: Run check
         uses: actions/checkout@v4
 
-      - name: Print Hello
-        run: echo "Hello, Workflow on push!"
+      - name: Run a script
+        run: sh hello.sh
+
+      - name: Make folder
+        run: mkdir hello
+
+      - name: Pull 
+        run: git pull
