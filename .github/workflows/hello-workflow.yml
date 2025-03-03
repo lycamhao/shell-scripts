@@ -1,27 +1,16 @@
-name: CI Pipeline
+name: Hello Workflow
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
 
 jobs:
-  build:
+  say-hello:
     runs-on: self-hosted
     steps:
-      - name: Get source code
-      uses: actions/checkout@v3
+      - name: Check out repository
+        uses: actions/checkout@v4
 
-      - name: Install node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-
-      -name: install
-      run: npm install 
-
-      -name: run test
-      run: npm test
+      - name: Print Hello
+        run: echo "Hello, Workflow!"
