@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  Running Script On Runner:
+  Running-Script-On-Runner:
     runs-on: self-hosted
     steps:
       - name: Run check
