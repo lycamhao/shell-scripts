@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  say-hello:
+  Running Script On Runner:
     runs-on: self-hosted
     steps:
       - name: Run check
@@ -18,5 +18,5 @@ jobs:
       - name: Make folder
         run: mkdir hello
 
-      - name: Pull 
-        run: git pull
+      - name: Push hello folder to github 
+        run: git add . && git commit "Add Hello Folder" && git push
