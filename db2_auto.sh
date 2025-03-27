@@ -148,6 +148,11 @@ echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
 source .bashrc
 
 # setting for db2
-db2 set db cfg for CRM USING LOGARCMETH1 DISK:/lv-db2arclogs
-db2 set db cfg for CRM USING NEWLOGPATH /lv-db2txlogs
-db2 set db cfg fot CRM USING LOGARCHCOMPR1 ON 10
+db2 update db cfg for CRM USING LOGARCHMETH1 DISK:/lv-db2arclogs
+db2 update db cfg for CRM USING LOGARCHCOMPR1 ON
+db2 update db cfg for CRM USING NEWLOGPATH /lv-db2txlogs
+
+# Deactive and restart DB2 Service
+db2 terminate
+db2stop
+db2start
