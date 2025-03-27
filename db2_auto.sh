@@ -1,27 +1,48 @@
-# Disable SELINUX
-sed 's\SELINUX=enforcing\SELINUX=disabled\' /etc/selinux/config
+# Update
+yum update -y
 
-# Change IP DB2-SERVER-1
-nmcli connection modify ens18 ipv4.method manual
-nmcli connection modify ens18 ipv4.addresses 192.168.100.250/24
-nmcli connection modify ens18 ipv4.gateway 192.168.100.1
-nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
-nmcli general hostname DB2-SERVER-1
-nmcli connection up ens18
+# Install nfs-utils and other pkg
+yum install -y nfs-utils
+yum install -y libstdc++.i686
+yum install -y pam.i686
 
-# Change IP DB2-SERVER-2
-# nmcli connection modify ens18 ipv4.method manual
-# nmcli connection modify ens18 ipv4.addresses 192.168.100.247/24
-# nmcli connection modify ens18 ipv4.gateway 192.168.100.1
-# nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
-# nmcli general hostname DB2-SERVER-2
-# nmcli connection up ens18
+# Fix db2top
+ln -s /lib64/libncurses.so.6 /lib64/libncurses.so.5
+ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
 
 # Change hostname
 sed 's\centos-9\DB2-SERVER-1\' /etc/hosts
 echo "192.168.100.250 DB2-SERVER-1" >>  /etc/hosts
 echo "192.168.100.247 DB2-SERVER-2" >>  /etc/hosts
 cat /etc/hosts
+
+# Disable SELINUX
+sed 's\SELINUX=enforcing\SELINUX=disabled\' /etc/selinux/config
+
+# Create folder for mount
+mkdir /lv-db2ad
+mkdir /lv-db2backups
+mkdir /lv-db2arclogs
+mkdir /lv-db2txlogs
+mkdir /lv-db2data
+mkdir /lv-db2install
+mkdir /lv-db2instance
+
+# Change IP DB2-SERVER-1
+# nmcli connection modify ens18 ipv4.addresses 192.168.100.250/24
+# nmcli connection modify ens18 ipv4.gateway 192.168.100.1
+# nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
+# nmcli connection modify ens18 ipv4.method manual
+# nmcli general hostname DB2-SERVER-1
+# nmcli connection up ens18
+
+# Change IP DB2-SERVER-2
+nmcli connection modify ens18 ipv4.addresses 192.168.100.247/24
+nmcli connection modify ens18 ipv4.gateway 192.168.100.1
+nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
+nmcli general hostname DB2-SERVER-2
+nmcli connection modify ens18 ipv4.method manual
+# nmcli connection up ens18
 
 # Create physical volume
 pvcreate sdb /dev/sdb
@@ -53,15 +74,6 @@ mkfs.ext4 /dev/vg-db2data/lv-db2data
 mkfs.ext4 /dev/vg-db2system/lv-db2install
 mkfs.ext4 /dev/vg-db2system/lv-db2instance
 
-# Create folder for mount
-mkdir /lv-db2ad
-mkdir /lv-db2backups
-mkdir /lv-db2arclogs
-mkdir /lv-db2txlogs
-mkdir /lv-db2data
-mkdir /lv-db2install
-mkdir /lv-db2instance
-
 # Add fstab
 echo "/dev/vg-db2backups/lv-db2ad /lv-db2ad ext4 defaults 1 2" >> /etc/fstab 
 echo "/dev/vg-db2backups/lv-db2backups /lv-db2backups ext4 defaults 1 2" >> /etc/fstab 
@@ -81,11 +93,6 @@ groupadd dbiadmin
 usermod db2inst1 -g dbiadmin 
 chown -R db2inst1:dbiadmin /lv-db2*
 
-# Install nfs-utils and other pkg
-yum install -y nfs-utils
-yum install -y libstdc++.i686
-yum install -y pam.i686
-
 # Create and mount nfs then copy DB2 Source
 mkdir /nfs
 chown -R db2inst1:dbiadmin /nfs
@@ -103,12 +110,13 @@ cd /lv-db2install/instance/
 ./db2icrt -u db2inst1 db2inst1
 ll /lv-db2instance/
 
-# Fix db2top
-ln -s /lib64/libncurses.so.6 /lib64/libncurses.so.5
-ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
+# Create sample db
+su - db2inst1
+db2start
+db2sampl -dbpath /lv-db2data/ -name CRM -verbose
 
 # Add alias to .bashrc
-cd $HOME
+cd ~
 echo "alias bkincreinsvndb='db2 backup db insvndb incremental to /db2backup compress'" >> .bashrc
 echo "alias bkinsvndb='db2 backup db insvndb online to /db2backup include logs compress'" >> .bashrc
 echo "alias bkoffinsvndb='db2 backup db insnvbd to /db2backup compress'" >> .bashrc
@@ -139,12 +147,7 @@ echo "alias onswitch='db2 update monitor switches using bufferpool on lock on ta
 echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
 source .bashrc
 
-# Create sample db
-su - db2inst1
-db2start
-db2sampl -dbpath /lv-db2data/ -name CRM -verbose
-
 # setting for db2
 db2 set db cfg for CRM USING LOGARCMETH1 DISK:/lv-db2arclogs
 db2 set db cfg for CRM USING NEWLOGPATH /lv-db2txlogs
-# db2 set db cfg fot CRM USING LOGARCHCOMPR1 ON 10
+db2 set db cfg fot CRM USING LOGARCHCOMPR1 ON 10

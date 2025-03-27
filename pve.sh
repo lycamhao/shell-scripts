@@ -20,7 +20,8 @@ qm clone 100 101 --name "DB2-SERVER-1" --full no
 qm clone 100 115 --name "DB2-SERVER-2" --full no 
 
 # Snap shot VM
-qm snapshot 101 --name "Origin"
+qm snapshot 101 "Origin" --vmstate yes
+qm snapshot 115 "Origin" --vmstate yes
 
 # Add vm disk to VM
 qm set 101 -scsi2 VM-STORE:500,format=qcow2,iothread=on
