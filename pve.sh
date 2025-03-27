@@ -3,6 +3,7 @@ qm list
 
 # List vm config 
 qm config 101
+qm config 115
 
 # List vm status
 qm status 101
@@ -37,3 +38,7 @@ qm set 115 -scsi4 VM-STORE:500,format=qcow2,iothread=on
 # Destroy VM
 qm destroy 101 --purge
 qm destroy 115 --purge
+
+# Change VM RAM
+qm set 101 --memory 8192
+qm set 115 --memory 6144
