@@ -147,10 +147,29 @@ echo "alias onswitch='db2 update monitor switches using bufferpool on lock on ta
 echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
 source .bashrc
 
-# setting for db2
+# Basic set for db2
+db2set db2comm=tcpip
+db2set DB2_ATS_ENABLE=YES
+db2 create database HADB
+
+# Basic setting for dbm 
+db2 update dbm cfg using DFTDBPATH /lv-db2data
+db2 update dbm cfg using SVCENAME 50000
+
+# Basic setting for db2 database
 db2 update db cfg for CRM USING LOGARCHMETH1 DISK:/lv-db2arclogs
 db2 update db cfg for CRM USING LOGARCHCOMPR1 ON
 db2 update db cfg for CRM USING NEWLOGPATH /lv-db2txlogs
+
+# HADR setting for db2 database
+db2 update db cfg for CRM USING HADR_LOCAL_HOST DB2-SERVER-1
+db2 update db cfg for CRM USING HADR_REMOTE_HOST DB2-SERVER-2
+db2 update db cfg for CRM USING HADR_LOCAL_SVC 50001
+db2 update db cfg for CRM USING HADR_LOCAL_SVC 50001
+db2 update db cfg for CRM USING HADR_REMOTE_INST DB2INST1
+db2 update db cfg for CRM USING HADR_SYNCMODE SYNC
+db2 update db cfg for CRM USING HADR_PEER_WINDOW 120
+db2 update db cfg for CRM USING LOGINDEXBUILD ON
 
 # Deactive and restart DB2 Service
 db2 terminate
