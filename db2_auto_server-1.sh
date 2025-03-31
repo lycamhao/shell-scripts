@@ -1,25 +1,48 @@
+#!/bin/bash
+
 # Update
-yum update -y
+ip1="192.168.10.250"
+ip2="192.168.10.247"
+ifname=$(nmcli connection show --active | grep ethernet | awk -F" " '{print $1}' | tr -d ' ')
+nmcli general hostname $1
+hostname=$(hostname)
+hostname1="$ip1 DB2-SERVER-1"
+hostname2="$ip2 DB2-SERVER-2"
 
 # Install nfs-utils and other pkg
+echo "Updating and installing nfs-utils, and other pakages"
+yum update -y
 yum install -y nfs-utils
 yum install -y libstdc++.i686
 yum install -y pam.i686
 
 # Fix db2top
+echo "Fix db2top"
 ln -s /lib64/libncurses.so.6 /lib64/libncurses.so.5
 ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
 
+# Add alias to root
+echo "Add alias for root"
+cd ~
+sudb2="su - db2inst1"
+echo "alias subd2='$sudb2'" >> .bashrc
+source .bashrc
+
 # Change hostname
-sed 's\centos-9\DB2-SERVER-1\' /etc/hosts
-echo "192.168.100.250 DB2-SERVER-1" >>  /etc/hosts
-echo "192.168.100.247 DB2-SERVER-2" >>  /etc/hosts
+echo "Changing hostname"
+echo "127.0.0.1 " ${hostname} > /etc/hosts
+echo $hostname1 >> /etc/hosts
+echo $hostname2 >> /etc/hosts
 cat /etc/hosts
 
 # Disable SELINUX
-sed 's\SELINUX=enforcing\SELINUX=disabled\' /etc/selinux/config
+echo "Disable SELINUX"
+echo "SELINUX=disabled" > /etc/selinux/config
+echo "SELINUXTYPE=targeted" >> /etc/selinux/config
+cat /etc/selinux/config
 
 # Create folder for mount
+echo "Make folder for mount"
 mkdir /lv-db2ad
 mkdir /lv-db2backups
 mkdir /lv-db2arclogs
@@ -28,23 +51,19 @@ mkdir /lv-db2data
 mkdir /lv-db2install
 mkdir /lv-db2instance
 
-# Change IP DB2-SERVER-1
-# nmcli connection modify ens18 ipv4.addresses 192.168.100.250/24
-# nmcli connection modify ens18 ipv4.gateway 192.168.100.1
-# nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
-# nmcli connection modify ens18 ipv4.method manual
-# nmcli general hostname DB2-SERVER-1
-# nmcli connection up ens18
-
-# Change IP DB2-SERVER-2
-nmcli connection modify ens18 ipv4.addresses 192.168.100.247/24
-nmcli connection modify ens18 ipv4.gateway 192.168.100.1
-nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
-nmcli general hostname DB2-SERVER-2
-nmcli connection modify ens18 ipv4.method manual
-# nmcli connection up ens18
+# Change IP on subnet 192.168.10.0/24
+echo "Change IP for $hostname"
+if [ "$hostname" == "DB2-SERVER-1" ]; then
+    nmcli connection modify $ifname ipv4.addresses 192.168.10.250/24
+elif [ "$hostname" == "DB2-SERVER-2" ]; then
+    nmcli connection modify $ifname ipv4.addresses 192.168.10.247/24
+fi
+nmcli connection modify $ifname ipv4.gateway 192.168.10.1
+nmcli connection modify $ifname ipv4.dns "8.8.8.8 8.8.4.4"
+nmcli connection modify $ifname ipv4.method manual
 
 # Create physical volume
+echo "Creating LVM"
 pvcreate sdb /dev/sdb
 pvcreate sdc /dev/sdc
 pvcreate sdd /dev/sdd
@@ -75,20 +94,22 @@ mkfs.ext4 /dev/vg-db2system/lv-db2install
 mkfs.ext4 /dev/vg-db2system/lv-db2instance
 
 # Add fstab
-echo "/dev/vg-db2backups/lv-db2ad /lv-db2ad ext4 defaults 1 2" >> /etc/fstab 
+echo "Adding fstab"
+echo "/dev/vg-db2backups/lv-db2ad /lv-db2ad ext4 defaults 1 2" >> /etc/fstab
 echo "/dev/vg-db2backups/lv-db2backups /lv-db2backups ext4 defaults 1 2" >> /etc/fstab 
 echo "/dev/vg-db2logs/lv-db2arclogs /lv-db2arclogs ext4 defaults 1 2" >> /etc/fstab
-echo "/dev/vg-db2logs/lv-db2txlogs /lv-db2txlogs ext4 defaults 1 2" >> /etc/fstab 
-echo "/dev/vg-db2data/lv-db2data /lv-db2data ext4 defaults 1 2" >> /etc/fstab 
-echo "/dev/vg-db2system/lv-db2install /lv-db2install ext4 defaults 1 2" >> /etc/fstab 
-echo "/dev/vg-db2system/lv-db2instance /lv-db2instance ext4 defaults 1 2" >> /etc/fstab
- 
+echo "/dev/vg-db2logs/lv-db2txlogs /lv-db2txlogs ext4 defaults 1 2" >> /etc/fstab
+echo "/dev/vg-db2data/lv-db2data /lv-db2data ext4 defaults 1 2" >> /etc/fstab
+echo "/dev/vg-db2system/lv-db2install /lv-db2install ext4 defaults 1 2" >> /etc/fstab
+echo "/dev/vg-db2system/lv-db2instance /home ext4 defaults 1 2" >> /etc/fstab
+cat /etc/fstab
+
 # Reload and mount
 systemctl daemon-reload 
 mount -a
 
 # Create user for DB2 instance
-useradd db2inst1 -d /lv-db2instance
+useradd db2inst1 -d /home/db2inst1
 groupadd dbiadmin
 usermod db2inst1 -g dbiadmin 
 chown -R db2inst1:dbiadmin /lv-db2*
@@ -112,19 +133,26 @@ ll /lv-db2instance/
 
 # Create sample db
 su - db2inst1
+mkdir /lv-db2txlogs/HADB
+mkdir /lv-db2arclogs/HADB
+mkdir /lv-db2txlogs/CRM
+mkdir /lv-db2arclogs/CRM
+
 db2start
 db2sampl -dbpath /lv-db2data/ -name CRM -verbose
 
-# Add alias to .bashrc
+# Add alias to db2inst1
 cd ~
-echo "alias bkincreinsvndb='db2 backup db insvndb incremental to /db2backup compress'" >> .bashrc
-echo "alias bkinsvndb='db2 backup db insvndb online to /db2backup include logs compress'" >> .bashrc
-echo "alias bkoffinsvndb='db2 backup db insnvbd to /db2backup compress'" >> .bashrc
+echo "alias bkincrecrm='db2 backup db crm incremental to /db2backup compress'" >> .bashrc
+echo "alias bkincrehadb='db2 backup db hadb incremental to /db2backup compress'" >> .bashrc
+echo "alias bkcrm='db2 backup db crm online to /db2backup include logs compress'" >> .bashrc
+echo "alias bkhadb='db2 backup db crm online to /db2backup include logs compress'" >> .bashrc
+echo "alias bkoffcrm='db2 backup db crm to /db2backup compress'" >> .bashrc
+echo "alias bkoffhadb='db2 backup db crm to /db2backup compress'" >> .bashrc
 echo "alias connrs='db2 connect reset'" >> .bashrc
 echo "alias conto='db2 connect to'" >> .bashrc
-echo "alias contoinsvndb='db2 connect to insvndb'" >> .bashrc
 echo "alias contocrm='db2 connect to insvndb'" >> .bashrc
-echo "alias contosample='db2 connect to insvndb'" >> .bashrc
+echo "alias contohadb='db2 connect to insvndb'" >> .bashrc
 echo "alias egrep='egrep --color=auto'" >> .bashrc
 echo "alias explg='db2expln -d insvndb -g -t -q'" >> .bashrc
 echo "alias explt='db2expln -d insvndb -t -q'" >> .bashrc
@@ -139,7 +167,6 @@ echo "alias getlock='db2 list application show detail | grep Lock-wait | sort -k
 echo "alias getlogs='db2pd -db insvndb -logs'" >> .bashrc
 echo "alias gettrans='db2pd -db insvndb -transaction'" >> .bashrc
 echo "alias grep='grep --color=auto'" >> .bashrc
-echo "alias l.='ls -d .* --color=auto'" >> .bashrc
 echo "alias listapp='db2 list application'" >> .bashrc
 echo "alias ll='ls -l --color=auto'" >> .bashrc
 echo "alias ls='ls --color=auto'" >> .bashrc
@@ -147,31 +174,54 @@ echo "alias onswitch='db2 update monitor switches using bufferpool on lock on ta
 echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
 source .bashrc
 
+# Basic setting for dbm 
+db2 update dbm cfg using DFTDBPATH /lv-db2data
+db2 update dbm cfg using SVCENAME 50000
+db2 update dbm cfg using WLM_DISPATCHER YES
+
 # Basic set for db2
 db2set db2comm=tcpip
 db2set DB2_ATS_ENABLE=YES
 db2 create database HADB
 
-# Basic setting for dbm 
-db2 update dbm cfg using DFTDBPATH /lv-db2data
-db2 update dbm cfg using SVCENAME 50000
-
 # Basic setting for db2 database
-db2 update db cfg for CRM USING LOGARCHMETH1 DISK:/lv-db2arclogs
+db2 update db cfg for CRM USING LOGARCHMETH1 DISK:/lv-db2arclogs/CRM
 db2 update db cfg for CRM USING LOGARCHCOMPR1 ON
-db2 update db cfg for CRM USING NEWLOGPATH /lv-db2txlogs
+db2 update db cfg for CRM USING NEWLOGPATH /lv-db2txlogs/CRM
 
-# HADR setting for db2 database
-db2 update db cfg for CRM USING HADR_LOCAL_HOST DB2-SERVER-1
-db2 update db cfg for CRM USING HADR_REMOTE_HOST DB2-SERVER-2
+db2 update db cfg for HADB USING LOGARCHMETH1 DISK:/lv-db2arclogs/HADB
+db2 update db cfg for HADB USING LOGARCHCOMPR1 ON
+db2 update db cfg for HADB USING NEWLOGPATH /lv-db2txlogs/HADB
+
+# HADR setting for CRM and HADB database
+if [ "$hostname" == "DB2-SERVER-1" ]; then
+    db2 update db cfg for CRM USING HADR_LOCAL_HOST DB2-SERVER-1
+    db2 update db cfg for CRM USING HADR_REMOTE_HOST DB2-SERVER-2
+    db2 update db cfg for HADB USING HADR_LOCAL_HOST DB2-SERVER-1
+    db2 update db cfg for HADB USING HADR_REMOTE_HOST DB2-SERVER-2
+else
+    db2 update db cfg for CRM USING HADR_LOCAL_HOST DB2-SERVER-2
+    db2 update db cfg for CRM USING HADR_REMOTE_HOST DB2-SERVER-1
+    db2 update db cfg for HADB USING HADR_LOCAL_HOST DB2-SERVER-2
+    db2 update db cfg for HADB USING HADR_REMOTE_HOST DB2-SERVER-1
+fi
 db2 update db cfg for CRM USING HADR_LOCAL_SVC 50001
-db2 update db cfg for CRM USING HADR_LOCAL_SVC 50001
+db2 update db cfg for CRM USING HADR_REMOTE_SVC 50001
 db2 update db cfg for CRM USING HADR_REMOTE_INST DB2INST1
 db2 update db cfg for CRM USING HADR_SYNCMODE SYNC
 db2 update db cfg for CRM USING HADR_PEER_WINDOW 120
 db2 update db cfg for CRM USING LOGINDEXBUILD ON
 
+db2 update db cfg for HADB USING HADR_LOCAL_SVC 50001
+db2 update db cfg for HADB USING HADR_REMOTE_SVC 50001
+db2 update db cfg for HADB USING HADR_REMOTE_INST DB2INST1
+db2 update db cfg for HADB USING HADR_SYNCMODE SYNC
+db2 update db cfg for HADB USING HADR_PEER_WINDOW 120
+db2 update db cfg for HADB USING LOGINDEXBUILD ON
+
 # Deactive and restart DB2 Service
 db2 terminate
 db2stop
 db2start
+
+# nmcli connection up ${ifname}
