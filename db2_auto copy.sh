@@ -1,25 +1,26 @@
 #!/bin/bash
-configFile="./basic.cfg"
-inputParam1=$1
-hostname=$(hostname | tr -d ' ')
-iface=$(nmcli connection show | grep ethernet | awk -F " " '{print $1}' | tr -d ' ')
+# Read from input file 
+if [ -f "./input.cfg" && ! -z $1 ];then
+    ip1=$(grep "ip1" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    ip2=$(grep "ip2" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    host1=$(grep "host1" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    host2=$(grep "host2" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    gw=$(grep "gateway" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    hn=$(grep "hn" ./input.cfg | awk -F "=" '{print $2}' | tr -d ' ')
+    hostname=$(hostname | tr -d ' ')
+    iface=$(nmcli connection show | grep ethernet | awk -F " " '{print $1}' | tr -d ' ')
 
-# Disable SELINUX Function
-disableSELINUX(){
+    # Disable SELINUX
     selinux=$(getenforce | tr -d ' ')
     if [ "$selinux" -ne "Disabled" ];then
         echo "SELINUX=disabled" > /etc/selinux/config
         echo "SELINUXTYPE=targeted" >> /etc/selinux/config
     fi
-}
 
-# Update Function
-doUpdate(){
+    # Update
     yum update -y
-}
 
-# Install related db2 package Function
-doInstallPkg(){
+    # Install nfs-utils and other pkg related to db2
     nfsutil=$(yum list installed | grep nfs-utils | awk -F " " '{print $1}' | tr -d ' ')
     libstdc_i686=$(yum list installed | grep libstdc++.i686 | awk -F " " '{print $1}' | tr -d ' ')
     pam_i686=$(yum list installed | grep pam.i686 | awk -F " " '{print $1}' | tr -d ' ')
@@ -32,10 +33,7 @@ doInstallPkg(){
     if [ -z "$pam_i686" ];then
         yum install -y pam.i686
     fi
-}
 
-# Fix db2top Function
-doFixDB2(){
     # Fix db2top ncurses.so.5
     if [ ! -f "/lib64/libncurses.so.6 /lib64/libncurses.so.5" ];then
         ln -s /lib64/libncurses.so.6 /lib64/libncurses.so.5
@@ -43,91 +41,73 @@ doFixDB2(){
     # Fix db2top libtinfo.so.5
     if [ ! -f "/lib64/libtinfo.so.6 /lib64/libtinfo.so.5" ];then
         ln -s /lib64/libtinfo.so.6 /lib64/libtinfo.so.5
-    fi 
-}
+    fi
 
-# Change and add other server ip and hostname Function
-doChangeHostName(){ 
-    hn=$(grep "$inputParam1" ./input.cfg | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    echo "127.0.0.1 $hn" > /etc/hosts
-    list=$(cat "$configFile")
-    for server in $list;
-    do 
-        ip=$(echo $server | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ' | sed 's/...$//')
-        hn=$(echo $server | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-        echo "$ip $hn" >> /etc/hosts
-    done
-}
+    # Change hostname
+    if [ "$hostname" -ne "$hn" ];then
+        echo "127.0.0.1 $hn"
+        echo "$ip1 $host1" >>  /etc/hosts
+        echo "$ip2 $host2" >>  /etc/hosts
+    fi
 
-# Change IP
-doChangeIP(){
-    ip=$(grep "$inputParam1" $configFile | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ')
-    gw=$(grep "$inputParam1" $configFile | awk -F "|" '{print $3}' | awk -F "=" '{print $2}' | tr -d ' ')
-    dns=$(grep "$inputParam1" $configFile | awk -F "|" '{print $4}'| awk -F "=" '{print $2}' | tr '-' ' ')
-    hn=$(grep "$inputParam1" $configFile | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    echo "$ip -- $gw -- $dns -- $hn"
-    nmcli connection modify $iface ipv4.addresses $ip
+    # Change IP
+    if [ "$hostname" -ne "$host1" ];then
+        nmcli connection modify $iface ipv4.addresses $ip1
+        nmcli general hostname $host1
+    elif [ "$hostname" -ne "$host2" ]
+        nmcli connection modify $iface ipv4.addresses $ip2
+        nmcli general hostname $host2
+    fi
     nmcli connection modify $iface ipv4.gateway $gw
-    nmcli connection modify $iface ipv4.dns $dns
-    nmcli general hostname $hn
+    nmcli connection modify $iface ipv4.dns "8.8.8.8 8.8.4.4"
     nmcli connection modify $iface ipv4.method manual
-    nmcli connection up $iface
-}
+    nmcli connection up ens18
+
+    # Create fodler for mount
+    find=$(find / -maxdept 1 -name "lv-*")
+    if [ -z "$find" ];then
+        mkdir /lv-db2ad
+        mkdir /lv-db2backups
+        mkdir /lv-db2arclogs
+        mkdir /lv-db2txlogs
+        mkdir /lv-db2data
+        mkdir /lv-db2install
+        mkdir /lv-db2instance
+    fi
+else
+    echo "The input.conig file not exist or first param not input, try again"
+fi
+
+
+
+# # Change IP DB2-SERVER-2
+# nmcli connection modify ens18 ipv4.addresses 192.168.100.247/24
+# nmcli connection modify ens18 ipv4.gateway 192.168.100.1
+# nmcli connection modify ens18 ipv4.dns "8.8.8.8 8.8.4.4"
+# nmcli general hostname DB2-SERVER-2
+# nmcli connection modify ens18 ipv4.method manual
+# # nmcli connection up ens18
 
 # Create physical volume
-doCreatePV(){
-    pvs=$(grep "pv=" $configFile | awk -F "=" '{print $2}' | tr -d ' ')
-    for pv in $pvs;
-    do
-        pvcreate $pv /dev/$pv
-    done
-}
+pvcreate sdb /dev/sdb
+pvcreate sdc /dev/sdc
+pvcreate sdd /dev/sdd
+pvcreate sde /dev/sde
 
 # Create volume group
-doCreateVG(){
-    vgs=$(grep "vg=" $configFile)
-    for vg in $vgs;
-    do
-        vgName=$(echo $vg | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $1}' | tr -d ' ')
-        pvName=$(echo $vg | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $2}' | tr -d ' ')
-        vgcreate $vgName $pvName
-    done
-}
+vgcreate vg-db2system /dev/sdb
+vgcreate vg-db2data /dev/sdc
+vgcreate vg-db2logs /dev/sdd
+vgcreate vg-db2backups /dev/sde
 
 # Create logical volume
-doCreateLV(){
-    lvs=$(grep "lv=" $configFile)
-    for lv in $lvs;
-    do
-        lvName=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $1}' | tr -d ' ')
-        lvSize=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $2}' | tr -d ' ')
-        vgName=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $3}' | tr -d ' ')
-        lvcreate -n $lvName -L $lvSize $vgName
-    done
-}
-
-# Read from input file 
-# if [ -f "$inputFile" ] && [ ! -z $1 ];then
-#     # ip=$(grep "$1" ./input.cfg | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ')
-#     # gw=$(grep "$1" ./input.cfg | awk -F "|" '{print $3}' | awk -F "=" '{print $2}' | tr -d ' ')
-#     # dns=$(grep "$1" ./input.cfg | awk -F "|" '{print $4}' | awk -F "=" '{print $2}'| tr -d ' ' | tr '-' ' ')
-#     # ip=$(grep "$1" ./input.cfg | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    
-
-#     # Disable SELINUX
-#     disableSELINUX
-
-#     # Update
-#     doUpdate
-
-#     # for server in $list;
-#     # do
-#     #     hn=$(echo "$server" | awk -F "|" '{print $5}' | awk -F "=" '{print $2}')
-#     #     echo $hn
-#     # done
-# else
-#     echo "The input.conig file not exist or first param not input, try again"
-# fi
+lvcreate -n lv-db2install -L 5G vg-db2system
+lvcreate -n lv-db2instance -L 20G vg-db2system
+lvcreate -n lv-db2data -L 499.9G vg-db2data
+lvcreate -n lv-db2txlogs -L 249.9G vg-db2logs
+lvcreate -n lv-db2arclogs -L 249.9G vg-db2logs
+lvcreate -n lv-db2ad -L 99.9G vg-db2backups
+lvcreate -n lv-db2backups -L 399.9G vg-db2backups
 
 # # Format ext4 for logical volume
 # mkfs.ext4 /dev/vg-db2backups/lv-db2ad
