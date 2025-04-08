@@ -109,8 +109,9 @@ doCreateVG(){
 
 # Create logical volume Function
 doCreateLV(){
-    lvs=$(grep "lv=" $configFile)
-    fs=$(grep "fs=" $configFile)
+    lvs=$(grep "lv=" $configFile | tr -d ' ')
+    fs=$(grep "fs=" $configFile | awk -F "=" '{print $2}' | tr -d ' ')
+    echo "$fs"
     for lv in $lvs;
     do
         lvName=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $1}' | tr -d ' ')
@@ -120,20 +121,20 @@ doCreateLV(){
         lvcreate -n $lvName -L $lvSize $vgName
         # XFS
         if [ "$fs" == "xfs" ];then
-            mkfs.xfs /dev/$vgName/$lvName
+            mkfs.xfs /dev/"$vgName"/"$lvName"
         fi
         # Ext4
         if [ "$fs" == "ext4" ];then
-            mkfs.ext4 /dev/$vgName/$lvName
+            mkfs.ext4 /dev/"$vgName"/"$lvName"
         fi
         # Create folder for mount point
-        if [ ! -d $mountPoint ];then
-            mkdir $mountPoint
+        if [ ! -d "$mountPoint" ];then
+            mkdir "$mountPoint"
         fi
-        mount /dev/$vgName/$lvName $mountPoint
+        mount /dev/"$vgName"/"$lvName" "$mountPoint"
         fstab=$(grep "$mountPoint" /etc/fstab)
         if [ -z $fstab ];then
-            echo "/dev/$vgName/$lvName $mountPoint ext4 defaults 1 2" >> /etc/fstab
+            echo "/dev/$vgName/$lvName $mountPoint $fs defaults 1 2" >> /etc/fstab
         fi
     done
     systemctl daemon-reload

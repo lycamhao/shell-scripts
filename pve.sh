@@ -42,6 +42,11 @@ qm set 101 -scsi2 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,
 qm set 101 -scsi3 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 qm set 101 -scsi4 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 
+qm set 101 -scsi1 VM-STORE:101/vm-101-disk-1.qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
+qm set 101 -scsi2 VM-STORE:101/vm-101-disk-2.qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
+qm set 101 -scsi3 VM-STORE:101/vm-101-disk-3.qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
+qm set 101 -scsi4 VM-STORE:101/vm-101-disk-4.qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
+
 qm set 115 -scsi1 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 qm set 115 -scsi2 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 qm set 115 -scsi3 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1

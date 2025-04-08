@@ -1,8 +1,7 @@
+#!/bin/bash
 # Create and mount nfs then copy DB2 Sourc
 db="HADB"
 mkdir /nfs
-mkdir /lv-db2data/$db
-chown -R db2inst1:dbiadmin /nfs
 mount -t nfs4 192.168.100.253:/lv-sharestore/nfs /nfs
 cp /nfs/v11.5.9_linuxx64_server_dec.tar ./
 
@@ -30,20 +29,23 @@ db2 update dbm cfg using DFTDBPATH /lv-db2data
 db2 update dbm cfg using SVCENAME 50000
 
 # Create DB for HADR
+mkdir /lv-db2data/$db
 db2 create database $db on /lv-db2data/$db
 
 # Basic setting for db2 database
-db2 update db cfg for $db USING LOGARCHMETH1 DISK:/lv-db2arclogs
+mkdir /lv-db2arclogs/$db
+mkdir /lv-db2txlogs/$db
+db2 update db cfg for $db USING LOGARCHMETH1 DISK:/lv-db2arclogs/$db
 db2 update db cfg for $db USING LOGARCHCOMPR1 ON
-db2 update db cfg for $db USING NEWLOGPATH /lv-db2txlogs
+db2 update db cfg for $db USING NEWLOGPATH /lv-db2txlogs/$db
 db2 update db cfg for $db USING LOGINDEXBUILD ON
 db2 update db cfg for $db USING INDEXREC RESTART
 
 # HADR setting for db2 crm database
 db2 update db cfg for $db USING HADR_LOCAL_HOST DB2-SERVER-1
 db2 update db cfg for $db USING HADR_REMOTE_HOST DB-SERVER-2
-db2 update db cfg for $db USING HADR_LOCAL_SVC 51601
-db2 update db cfg for $db USING HADR_REMOTE_SVC 51601
+db2 update db cfg for $db USING HADR_LOCAL_SVC 52601
+db2 update db cfg for $db USING HADR_REMOTE_SVC 52601
 db2 update db cfg for $db USING HADR_REMOTE_INST DB2INST1
 db2 update db cfg for $db USING HADR_SYNCMODE SYNC
 db2 update db cfg for $db USING HADR_PEER_WINDOW 120
