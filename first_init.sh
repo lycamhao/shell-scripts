@@ -110,6 +110,7 @@ doCreateVG(){
 # Create logical volume Function
 doCreateLV(){
     lvs=$(grep "lv=" $configFile)
+    fs=$(grep "fs=" $configFile)
     for lv in $lvs;
     do
         lvName=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $1}' | tr -d ' ')
@@ -117,7 +118,15 @@ doCreateLV(){
         vgName=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $3}' | tr -d ' ')
         mountPoint=$(echo $lv | sed 's/^...//' | tr ',' ' ' | awk -F " " '{print $4}' | tr -d ' ')
         lvcreate -n $lvName -L $lvSize $vgName
-        mkfs.ext4 /dev/$vgName/$lvName
+        # XFS
+        if [ "$fs" == "xfs" ];then
+            mkfs.xfs /dev/$vgName/$lvName
+        fi
+        # Ext4
+        if [ "$fs" == "ext4" ];then
+            mkfs.ext4 /dev/$vgName/$lvName
+        fi
+        # Create folder for mount point
         if [ ! -d $mountPoint ];then
             mkdir $mountPoint
         fi
