@@ -4,6 +4,11 @@ inputParam1=$1
 hostname=$(hostname | tr -d ' ')
 iface=$(nmcli connection show | grep ethernet | awk -F " " '{print $1}' | tr -d ' ')
 
+# Change machine ID
+doChangeMachineID(){
+    systemd-machine-id-setup
+}
+
 # Disable SELINUX Function
 disableSELINUX(){
     selinux=$(getenforce | tr -d ' ')
@@ -74,7 +79,6 @@ doChangeIP(){
     gw=$(grep "$inputParam1" $configFile | awk -F "|" '{print $3}' | awk -F "=" '{print $2}' | tr -d ' ')
     dns=$(grep "$inputParam1" $configFile | awk -F "|" '{print $4}'| awk -F "=" '{print $2}' | tr '-' ' ')
     hn=$(grep "$inputParam1" $configFile | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    echo "$ip -- $gw -- $dns -- $hn"
     nmcli connection modify $iface ipv4.addresses $ip
     nmcli connection modify $iface ipv4.gateway $gw
     nmcli connection modify $iface ipv4.dns "$dns"
@@ -139,6 +143,15 @@ doCreateUser(){
 
 # Read from input file 
 if [ -f "$configFile" ] && [ ! -z $1 ];then
+    # Change machine ID
+    doChangeMachineID
+    
+    # Change IP and hostname
+    doChangeHostName
+
+    # Change IP
+    doChangeIP
+
     # Disable SELINUX
     disableSELINUX
 
@@ -154,12 +167,6 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     # Fix db2top
     doFixDB2Top
 
-    # Change IP and hostname
-    doChangeHostName
-
-    # Change IP
-    doChangeIP
-
     # Create physical volume
     doCreatePV
 
@@ -173,7 +180,7 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     doCreateUser
 
     # Change owner
-    chown -R db2inst1:dbiadmin /lv-db2data
+    chown -R db2inst1:db2iadm /lv-db2*
 
     # Add alias to .bashrc
     su - db2inst1
@@ -190,8 +197,13 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     echo "alias onswitch='db2 update monitor switches using bufferpool on lock on table on statement on uow on sort on timestamp on'" >> .bashrc
     echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
     source .bashrc
-    exit
+
+    # Restart NetworkManager
     systemctl restart NetworkManager
+
+    # Add alias sudb2
+    echo "sudb2='su - db2inst1'" >> .bashrc
+    source .bashrc
 else    
     echo "The input.conig file not exist or first param not input, try again"
 fi
