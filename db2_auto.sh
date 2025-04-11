@@ -27,6 +27,13 @@ db2iauto -on db2inst1
 # Basic setting for dbm 
 db2 update dbm cfg using DFTDBPATH /lv-db2data
 db2 update dbm cfg using SVCENAME 50000
+db2 update dbm cfg using DFT_MON_BUFPOOL ON
+db2 update dbm cfg using DFT_MON_LOCK ON
+db2 update dbm cfg using DFT_MON_SORT ON
+db2 update dbm cfg using DFT_MON_STMT ON
+db2 update dbm cfg using DFT_MON_TABLE ON
+db2 update dbm cfg using DFT_MON_UOW ON
+db2 update dbm cfg using HEALTH_MON ON
 
 # Create DB for HADR
 mkdir /lv-db2data/$db
@@ -40,16 +47,17 @@ db2 update db cfg for $db USING LOGARCHCOMPR1 ON
 db2 update db cfg for $db USING NEWLOGPATH /lv-db2txlogs/$db
 db2 update db cfg for $db USING LOGINDEXBUILD ON
 db2 update db cfg for $db USING INDEXREC RESTART
-
+db2 update db cfg for $db USING LOGFILSIZ 10024
+db2 update db cfg for $db USING LOGPRIMARY 50
 # HADR setting for db2 crm database
 db2 update db cfg for $db USING HADR_LOCAL_HOST DB2-SERVER-1
-db2 update db cfg for $db USING HADR_REMOTE_HOST DB-SERVER-2
+db2 update db cfg for $db USING HADR_REMOTE_HOST DB2-SERVER-2
 db2 update db cfg for $db USING HADR_LOCAL_SVC 52601
 db2 update db cfg for $db USING HADR_REMOTE_SVC 52601
 db2 update db cfg for $db USING HADR_REMOTE_INST DB2INST1
 db2 update db cfg for $db USING HADR_SYNCMODE SYNC
 db2 update db cfg for $db USING HADR_PEER_WINDOW 120
-
+db2set 
 # Deactive and restart DB2 Service
 db2 terminate
 db2stop

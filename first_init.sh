@@ -212,7 +212,7 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     systemctl restart NetworkManager
 
     # Add alias sudb2
-    echo "sudb2='su - db2inst1'" >> .bashrc
+    echo "alias sudb2='su - db2inst1'" >> .bashrc
     source .bashrc
 else    
     echo "The input.conig file not exist or first param not input, try again"
