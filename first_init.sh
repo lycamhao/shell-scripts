@@ -3,6 +3,10 @@ configFile="./basic.cfg"
 inputParam1=$1
 hostname=$(hostname | tr -d ' ')
 iface=$(nmcli connection show | grep ethernet | awk -F " " '{print $1}' | tr -d ' ')
+idev=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' ')
+idevTotal=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' ' | wc -l)
+idevList=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' ') 
+idevStatus=$(nmcli device status | grep ethernet | awk -F " " '{print $3}' | tr -d ' ')
 
 # Change machine ID
 doChangeMachineID(){
@@ -37,6 +41,21 @@ doInstallPkg(){
     nfsutil=$(yum list installed | grep nfs-utils | awk -F " " '{print $1}' | tr -d ' ')
     libstdc_i686=$(yum list installed | grep libstdc++.i686 | awk -F " " '{print $1}' | tr -d ' ')
     pam_i686=$(yum list installed | grep pam.i686 | awk -F " " '{print $1}' | tr -d ' ')
+    sysstat=$(yum list installed | grep sysstat | awk -F " " '{print $1}' | tr -d ' ')
+    mksh=$(yum list installed | grep mksh | awk -F " " '{print $1}' | tr -d ' ')
+    $perlinterpreter=$(yum list installed | grep "perl-interpreter" | awk -F " " '{print $1}' | tr -d ' ')
+    $persyslog=$(yum list installed | grep "perl-Sys-Syslog" | awk -F " " '{print $1}' | tr -d ' ')
+    $perlnetping=$(yum list installed | grep "perl-Net-Ping" | awk -F " " '{print $1}' | tr -d ' ')
+    $perlthreadqueue=$(yum list installed | grep "perl-Thread-Queue" | awk -F " " '{print $1}' | tr -d ' ')
+    $make=$(yum list installed | grep make | awk -F " " '{print $1}' | tr -d ' ')
+    $elfutils=$(yum list installed | grep "elfutils-libelf-devel" | awk -F " " '{print $1}' | tr -d ' ')
+    $patch=$(yum list installed | grep patch | awk -F " " '{print $1}' | tr -d ' ')
+    $m4=$(yum list installed | grep m4 | awk -F " " '{print $1}' | tr -d ' ')
+    $kerneldevel=$(yum list installed | grep "kernel-devel" | awk -F " " '{print $1}' | tr -d ' ')
+    $python=$(yum list installed | grep "python36" | awk -F " " '{print $1}' | tr -d ' ')
+    $perlthreadqueue=$(yum list installed | grep "perl" | awk -F " " '{print $1}' | tr -d ' ')
+    $gcc_cpp=$(yum list installed | grep "gcc-c++" | awk -F " " '{print $1}' | tr -d ' ')
+    $ksh=$(yum list installed | grep ksh | awk -F " " '{print $1}' | tr -d ' ')
     if [ -z "$nfsutil" ];then
         yum install -y nfs-utils
     fi
@@ -45,6 +64,51 @@ doInstallPkg(){
     fi
     if [ -z "$pam_i686" ];then
         yum install -y pam.i686
+    fi
+    if [ -z "$sysstat" ];then
+        yum install -y sysstat
+    fi
+    if [ -z "$mksh" ];then
+        yum install -y mksh
+    fi
+    if [ -z "$perlinterpreter" ];then
+        yum install -y perl-interpreter
+    fi
+    if [ -z "$perlsyslog" ];then
+        yum install -y perl-Sys-Syslog
+    fi
+    if [ -z "$perlnetping" ];then
+        yum install -y perl-Net-Ping
+    fi
+    if [ -z "$perlthreadqueue" ];then
+        yum install -y perl-Thread-Queue
+    fi
+    if [ -z "$make" ];then
+        yum install -y make
+    fi
+    if [ -z "$elfutils" ];then
+        yum install -y elfutils-libelf-devel
+    fi
+    if [ -z "$patch" ];then
+        yum install -y patch
+    fi
+    if [ -z "$m4" ];then
+        yum install -y m4
+    fi
+    if [ -z "$kerneldevel" ];then
+        yum install -y kernel-devel
+    fi
+    if [ -z "$python" ];then
+        yum install -y python36
+    fi
+    if [ -z "$perl" ];then
+        yum install -y perl
+    fi
+    if [ -z "$gcc_cpp" ];then
+        yum install -y gcc-c++
+    fi
+    if [ -z "$ksh" ];then
+        yum install -y ksh
     fi
 }
 
@@ -62,8 +126,8 @@ doFixDB2Top(){
 
 # Change and add other server ip and hostname Function
 doChangeHostName(){ 
-    hn=$(grep "$inputParam1" $configFile | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    echo "127.0.0.1 $hn" > /etc/hosts
+    hn=$(grep "$inputParam1" $configFile | grep -oP "gw=\K[^$]+" | tr -d ' ')
+    echo "" > /etc/hosts
     list=$(cat "$configFile")
     for server in $list;
     do 
@@ -75,16 +139,46 @@ doChangeHostName(){
 
 # Change IP Function
 doChangeIP(){
-    ip=$(grep "$inputParam1" $configFile | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ')
-    gw=$(grep "$inputParam1" $configFile | awk -F "|" '{print $3}' | awk -F "=" '{print $2}' | tr -d ' ')
-    dns=$(grep "$inputParam1" $configFile | awk -F "|" '{print $4}'| awk -F "=" '{print $2}' | tr '-' ' ')
-    hn=$(grep "$inputParam1" $configFile | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-    nmcli connection modify $iface ipv4.addresses $ip
-    nmcli connection modify $iface ipv4.gateway $gw
-    nmcli connection modify $iface ipv4.dns "$dns"
+    if [ $idevTotal > 1 ];then
+        count=1
+        for iface in $idevList;do
+            nmcli device connect $iface
+            nmcli connection modify $iface ipv4.method manual
+            ip=$(grep "$inputParam1" $configFile | grep -oP "ip$count=\K[^|]+" | tr -d ' ')
+            gw=$(grep "$inputParam1" $configFile | grep -oP "gw$count=\K[^|]+" | tr -d ' ')
+            dns=$(grep "$inputParam1" $configFile | grep -oP "dns$count=\K[^|]+" | tr '-' ' ')
+            if [ ! -z "$ip" ];then
+                nmcli connection modify $iface ipv4.addresses $ip
+            fi
+            
+            if [ ! -z "$gw" ];then
+                nmcli connection modify $iface ipv4.gateway $gw
+            fi
+
+            if [ ! -z "$dns" ];then
+                nmcli connection modify $iface ipv4.dns "$dns"
+            fi
+        count=$((count+1))
+        done
+    else
+        nmcli connection modify $iface ipv4.method manual
+        ip=$(grep "$inputParam1" $configFile | grep -oP "ip=\K[^|]+" | tr -d ' ')
+        gw=$(grep "$inputParam1" $configFile | grep -oP "gw=\K[^|]+" | tr -d ' ')
+        dns=$(grep "$inputParam1" $configFile | grep -oP "dns=\K[^|]+" | tr '-' ' ')
+            if [ ! -z "$ip" ];then
+                nmcli connection modify $iface ipv4.addresses $ip
+            fi
+            
+            if [ ! -z "$gw" ];then
+                nmcli connection modify $iface ipv4.gateway $gw
+            fi
+
+            if [ ! -z "$dns" ];then
+                nmcli connection modify $iface ipv4.dns "$dns"
+            fi
+    fi
+    hn=$(grep "$inputParam1" $configFile | grep -oP "hn=\K[^$]+" | tr -d ' ')
     nmcli general hostname $hn
-    nmcli connection modify $iface ipv4.method manual
-    # nmcli connection up $iface
 }
 
 # Create physical volume Function
@@ -193,19 +287,7 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     chown -R db2inst1:db2iadm /lv-db2*
 
     # Add alias to .bashrc
-    su - db2inst1
-    echo "alias connrs='db2 connect reset'" >> .bashrc
-    echo "alias conto='db2 connect to'" >> .bashrc
-    echo "alias getdbcfg='db2 get db cfg for'" >> .bashrc
-    echo "alias getdbmcfg='db2 get dbm cfg'" >> .bashrc
-    echo "alias getexec='db2 list application show detail | grep -v Wait | grep -v "Connect Completed"'" >> .bashrc
-    echo "alias getid='db2 get snapshot for application agentid'" >> .bashrc
-    echo "alias getlock='db2 list application show detail | grep Lock-wait | sort -k 10'" >> .bashrc
-    echo "alias getlogs='db2pd -db insvndb -logs'" >> .bashrc
-    echo "alias gettrans='db2pd -db insvndb -transaction'" >> .bashrc
-    echo "alias listapp='db2 list application'" >> .bashrc
-    echo "alias onswitch='db2 update monitor switches using bufferpool on lock on table on statement on uow on sort on timestamp on'" >> .bashrc
-    echo "alias resetswitch='db2 reset monitor for database '" >> .bashrc
+    echo "alias sudb2='su - db2inst1'" >> .bashrc
     source .bashrc
 
     # Restart NetworkManager
