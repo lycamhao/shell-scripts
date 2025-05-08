@@ -44,7 +44,7 @@ doInstallPkg(){
     sysstat=$(rpm -q sysstat)
     mksh=$(rpm -q mksh)
     perlinterpreter=$(rpm -q perl-interpreter)
-    persyslog=$(rpm -q perl-Sys-Syslog)
+    perlsyslog=$(rpm -q perl-Sys-Syslog)
     perlnetping=$(rpm -q perl-Net-Ping)
     perlthreadqueue=$(rpm -q perl-Thread-Queue)
     make=$(rpm -q make)
