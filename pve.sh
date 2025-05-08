@@ -23,12 +23,10 @@ qm clone 100 101 --name "DB2-SERVER-1" --full no
 qm clone 100 115 --name "DB2-SERVER-2" --full no 
 
 # Snap shot VM with vmstate
-qm snapshot 101 "Origin" --vmstate yes
-qm snapshot 115 "Origin" --vmstate yes
+qm snapshot $id "Origin" --vmstate yes
 
 # Snap shot VM without vmstate
-qm snapshot 101 "Origin" --vmstate no
-qm snapshot 115 "Origin" --vmstate no
+qm snapshot $id "Origin" --vmstate no
 
 # Convert qcow2 to raw format 
 qemu-img convert disk.qcow2 disk.raw
@@ -42,6 +40,9 @@ qm set $id -scsi1 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,
 qm set $id -scsi2 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 qm set $id -scsi3 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
 qm set $id -scsi4 VM-STORE:500,format=qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1
+
+# Add new NIC card to VM
+qm set $id -net1 e1000e,bridge=vnetz13,firewall=1
 
 #Change added vm disk
 qm set $id -scsi1 VM-STORE:$id/vm-$id-disk-1.qcow2,cache=unsafe,iothread=1,aio=threads,discard=on,ssd=1

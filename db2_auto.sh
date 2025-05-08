@@ -1,6 +1,6 @@
 #!/bin/bash
 # Create and mount nfs then copy DB2 Sourc
-db="HADB"
+db="CRM"
 mkdir /nfs
 mount -t nfs4 192.168.100.253:/lv-sharestore/nfs /nfs
 cp /nfs/v11.5.9_linuxx64_server_dec.tar ./

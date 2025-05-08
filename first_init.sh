@@ -38,24 +38,25 @@ doUpdate(){
 
 # Install related db2 package Function
 doInstallPkg(){
-    nfsutil=$(yum list installed | grep nfs-utils | awk -F " " '{print $1}' | tr -d ' ')
-    libstdc_i686=$(yum list installed | grep libstdc++.i686 | awk -F " " '{print $1}' | tr -d ' ')
-    pam_i686=$(yum list installed | grep pam.i686 | awk -F " " '{print $1}' | tr -d ' ')
-    sysstat=$(yum list installed | grep sysstat | awk -F " " '{print $1}' | tr -d ' ')
-    mksh=$(yum list installed | grep mksh | awk -F " " '{print $1}' | tr -d ' ')
-    $perlinterpreter=$(yum list installed | grep "perl-interpreter" | awk -F " " '{print $1}' | tr -d ' ')
-    $persyslog=$(yum list installed | grep "perl-Sys-Syslog" | awk -F " " '{print $1}' | tr -d ' ')
-    $perlnetping=$(yum list installed | grep "perl-Net-Ping" | awk -F " " '{print $1}' | tr -d ' ')
-    $perlthreadqueue=$(yum list installed | grep "perl-Thread-Queue" | awk -F " " '{print $1}' | tr -d ' ')
-    $make=$(yum list installed | grep make | awk -F " " '{print $1}' | tr -d ' ')
-    $elfutils=$(yum list installed | grep "elfutils-libelf-devel" | awk -F " " '{print $1}' | tr -d ' ')
-    $patch=$(yum list installed | grep patch | awk -F " " '{print $1}' | tr -d ' ')
-    $m4=$(yum list installed | grep m4 | awk -F " " '{print $1}' | tr -d ' ')
-    $kerneldevel=$(yum list installed | grep "kernel-devel" | awk -F " " '{print $1}' | tr -d ' ')
-    $python=$(yum list installed | grep "python36" | awk -F " " '{print $1}' | tr -d ' ')
-    $perlthreadqueue=$(yum list installed | grep "perl" | awk -F " " '{print $1}' | tr -d ' ')
-    $gcc_cpp=$(yum list installed | grep "gcc-c++" | awk -F " " '{print $1}' | tr -d ' ')
-    $ksh=$(yum list installed | grep ksh | awk -F " " '{print $1}' | tr -d ' ')
+    nfsutil=$(rpm -q nfs-utils)
+    libstdc_i686=$(rpm -q libstdc++.i686)
+    pam_i686=$(rpm -q pam.i686)
+    sysstat=$(rpm -q sysstat)
+    mksh=$(rpm -q mksh)
+    perlinterpreter=$(rpm -q perl-interpreter)
+    persyslog=$(rpm -q perl-Sys-Syslog)
+    perlnetping=$(rpm -q perl-Net-Ping)
+    perlthreadqueue=$(rpm -q perl-Thread-Queue)
+    make=$(rpm -q make)
+    elfutils=$(rpm -q elfutils-libelf-devel)
+    patch=$(rpm -q patch)
+    m4=$(rpm -q m4)
+    kerneldevel=$(rpm -q kernel-devel)
+    python=$(rpm -q python36)
+    perlthreadqueue=$(rpm -q perl)
+    gcc_cpp=$(rpm -q gcc-c++)
+    ksh=$(rpm -q ksh)
+
     if [ -z "$nfsutil" ];then
         yum install -y nfs-utils
     fi
@@ -125,24 +126,48 @@ doFixDB2Top(){
 }
 
 # Change and add other server ip and hostname Function
-doChangeHostName(){ 
-    hn=$(grep "$inputParam1" $configFile | grep -oP "gw=\K[^$]+" | tr -d ' ')
-    echo "" > /etc/hosts
-    list=$(cat "$configFile")
-    for server in $list;
-    do 
-        ip=$(echo $server | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ' | sed 's/...$//')
-        hn=$(echo $server | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
-        echo "$ip $hn" >> /etc/hosts
-    done
+doChangeHostName(){
+    if [ $idevTotal -gt 1 ];then
+        count=1
+        for iface in $idevList;do
+            ip=$(grep "$inputParam1" $configFile | grep -oP "ip$count=\K[^|]+" | tr -d ' ')
+            hn=$(echo $server | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
+            if [ ! -z "$ip" ];then
+                nmcli connection modify $iface ipv4.addresses $ip
+            fi
+            
+            if [ ! -z "$gw" ];then
+                nmcli connection modify $iface ipv4.gateway $gw
+            fi
+
+            if [ ! -z "$dns" ];then
+                nmcli connection modify $iface ipv4.dns "$dns"
+            fi
+            count=$((count+1))
+        done
+    else 
+        hn=$(grep "$inputParam1" $configFile | grep -oP "hn=\K[^$]+" | tr -d ' ')
+        echo "" > /etc/hosts
+        list=$(cat "$configFile")
+        for server in $list;
+        do 
+            ip=$(echo $server | awk -F "|" '{print $2}' | awk -F "=" '{print $2}' | tr -d ' ' | sed 's/...$//')
+            hn=$(echo $server | awk -F "|" '{print $5}' | awk -F "=" '{print $2}' | tr -d ' ')
+            echo "$ip $hn" >> /etc/hosts
+        done
+    fi
 }
 
 # Change IP Function
 doChangeIP(){
-    if [ $idevTotal > 1 ];then
+    if [ $idevTotal -gt 1 ];then
         count=1
         for iface in $idevList;do
             nmcli device connect $iface
+            nmcli device set $iface autoconnect on
+            nmcli device set $iface autoconnect yes
+            nmcli device set $iface autoconnect true
+            nmcli connection modify $iface ipv6.method disabled
             nmcli connection modify $iface ipv4.method manual
             ip=$(grep "$inputParam1" $configFile | grep -oP "ip$count=\K[^|]+" | tr -d ' ')
             gw=$(grep "$inputParam1" $configFile | grep -oP "gw$count=\K[^|]+" | tr -d ' ')
@@ -158,9 +183,14 @@ doChangeIP(){
             if [ ! -z "$dns" ];then
                 nmcli connection modify $iface ipv4.dns "$dns"
             fi
-        count=$((count+1))
+            count=$((count+1))
         done
     else
+        nmcli device connect $iface
+        nmcli device set $iface autoconnect on
+        nmcli device set $iface autoconnect yes
+        nmcli device set $iface autoconnect true
+        nmcli connection modify $iface ipv6.method disabled
         nmcli connection modify $iface ipv4.method manual
         ip=$(grep "$inputParam1" $configFile | grep -oP "ip=\K[^|]+" | tr -d ' ')
         gw=$(grep "$inputParam1" $configFile | grep -oP "gw=\K[^|]+" | tr -d ' ')
