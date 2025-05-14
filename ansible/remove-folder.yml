@@ -1,0 +1,15 @@
+---
+- name: Create user
+  hosts: linux
+  become: no
+  vars:
+    new_username: sys_perf
+    new_password_plain: "cx1@VNP3rf"
+    destination_folder: "/home/sys_perf"
+    script_folder: "scripts"
+  tasks:
+
+    - name: Remove "{{ script_folder }}" folder
+      ansible.builtin.file:
+        path: "{{ destination_folder }}/{{ script_folder }}"
+        state: absent

@@ -1,0 +1,15 @@
+---
+- name: Create user
+  hosts: linux
+  become: yes
+  vars:
+    new_username: sys_perf
+    new_password_plain: "cx1@VNP3rf"
+  tasks:
+
+    - name: Remove user {{ new_username }}
+      ansible.builtin.user:
+        name: "{{ new_username }}"
+        shell: /bin/bash
+        state: absent
+        create_home: yes

@@ -1,0 +1,28 @@
+---
+- name: Create user
+  hosts: linux
+  become: no
+  vars:
+    new_username: sys_perf
+    new_password_plain: "cx1@VNP3rf"
+    destination_folder: "/home/sys_perf"
+    script_folder: "scripts"
+  tasks:
+
+    - name: Create "{{ script_folder }}" folder
+      ansible.builtin.file:
+        path: "{{ destination_folder }}/{{ script_folder }}"
+        state: directory  
+        mode: '0755'
+
+    - name: Create "get_resource" folder
+      ansible.builtin.file:
+        path: "{{ destination_folder }}/{{ script_folder }}/get_resource"
+        state: directory  
+        mode: '0755'
+
+    - name: Create temp folder
+      ansible.builtin.file:
+        path: "{{ destination_folder }}/{{ script_folder }}/get_resource/temp"
+        state: directory
+        mode: '0755'

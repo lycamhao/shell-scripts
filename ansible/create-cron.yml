@@ -1,0 +1,21 @@
+---
+- name: Create cronjob
+  hosts: linux
+  become: no
+  vars:
+    new_username: sys_perf
+    new_password_plain: "cx1@VNP3rf"
+    destination_folder: "/home/sys_perf"
+    script_folder: "scripts/get_resource"
+  tasks:
+
+    - name: Delete cron job
+      ansible.builtin.cron:
+        name: "##Get resource##"
+        state: "absent"
+
+    # - name: Create cron job
+    #   ansible.builtin.cron:
+    #     name: "##Get resource##"
+    #     minute: "*/5"
+    #     job: "/bin/bash {{ destination_folder }}/{{ script_folder }}/get_resources.sh"

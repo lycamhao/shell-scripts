@@ -1,0 +1,22 @@
+---
+- name: Create user
+  hosts: linux
+  become: no
+  vars:
+    new_username: sys_perf
+    new_password_plain: "cx1@VNP3rf"
+    destination_folder: "/home/sys_perf"
+    script_folder: "scripts/get_resource"
+  tasks:
+
+    - name: Copy get_resources.sh to "{{ script_folder }}" folder
+      ansible.builtin.copy:
+        src: "./get_resource/get_resources.sh"
+        dest: "{{ destination_folder }}/{{ script_folder }}"
+        mode: '0755'
+
+    - name: Copy settings.properties to "{{ script_folder }}" folder
+      ansible.builtin.copy:
+        src: "./get_resource/settings.properties"
+        dest: "{{ destination_folder }}/{{ script_folder }}"
+        mode: '0755'

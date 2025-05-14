@@ -1,23 +1,28 @@
 #!/bin/bash
-SAVE_FILE_PATH=$(grep SAVE_FILE_PATH settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-# NFS_PATH=$(grep SAVE_FILE_PATH settings.properties | awk -F'[=]' '{print $2}')
-# AUTO_MOUNT_NFS=$(grep AUTO_MOUNT_NFS settings.properties | awk -F'[=]' '{print $2}')
-# NFS_MOUNT_PATH=$(grep NFS_MOUNT_PATH settings.properties | awk -F'[=]' '{print $2}')
-GET_CPU=$(grep GET_CPU settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-GET_RAM=$(grep GET_RAM settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-GET_HDD=$(grep GET_HDD settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-FORMATED_LOG=$(grep FORMATED_LOG settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_PATH=$(grep SCP_PATH settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_HOST=$(grep SCP_HOST settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_COPY=$(grep SCP_COPY settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
 
+SAVE_FILE_PATH=$(grep SAVE_FILE_PATH ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+# NFS_PATH=$(grep SAVE_FILE_PATH ./settings.properties | awk -F'[=]' '{print $2}')
+# AUTO_MOUNT_NFS=$(grep AUTO_MOUNT_NFS ./settings.properties | awk -F'[=]' '{print $2}')
+# NFS_MOUNT_PATH=$(grep NFS_MOUNT_PATH ./settings.properties | awk -F'[=]' '{print $2}')
+GET_CPU=$(grep GET_CPU ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+GET_RAM=$(grep GET_RAM ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+GET_HDD=$(grep GET_HDD ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+FORMATED_LOG=$(grep FORMATED_LOG ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SCP_PATH=$(grep SCP_PATH ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SCP_HOST=$(grep SCP_HOST ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SCP_COPY=$(grep SCP_COPY ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SFTP_COPY=$(grep SFTP_COPY ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SFTP_USER=$(grep SFTP_USER ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SFTP_PATH=$(grep SFTP_PATH ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SFTP_HOST=$(grep SFTP_HOST ./settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+DATE_TIME=$(date +%Y%m%d-%H%M)
 # if [[ $GET_CPU == 1 ]]; then
 #     echo "GET_CPU is 1"
 # fi
 
 if [ -z ${SAVE_FILE_PATH} ]; then
-	SAVE_FILE_PATH="/tmp"
+	mkdir ${SAVE_FILE_PATH}
 fi
 
 HOST_ADDRESS=$(hostname -I)
@@ -55,11 +60,11 @@ HOST_NAME=$(hostname)
 # 	echo ${NFS_PACKAGE?};
 # }
 
-rm -rf ${SAVE_FILE_PATH?}/${HOST_NAME}_${HOST_ADDRESS}.log
+rm -rf ${SAVE_FILE_PATH?}/${HOST_NAME}.log
 writeToFile(){
 	#checkNFSPackage;
 	if [ ! -z "$1" ]; then
-		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}_${HOST_ADDRESS}.log"
+		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}.log"
 	fi
 }
 
@@ -120,6 +125,17 @@ if [ $GET_HDD == 1 ]; then
 	writeToFile "$hddUsage"
 fi
 
+#SCP Copy
 if [ $SCP_COPY == 1 ]; then
 	scp -i ./${SSH_PRIVATE_KEY} "${SAVE_FILE_PATH}/${HOST_NAME}_${HOST_ADDRESS}.log" "${SCP_USER}"@"${SCP_HOST}":"${SCP_PATH}"
+fi
+
+# SFTP Copy
+if [ $SFTP_COPY == 1 ]; then
+	sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
+lcd "${SAVE_FILE_PATH}"
+cd "${SFTP_PATH}"
+put ${HOST_NAME}.log
+bye
+EOF
 fi
