@@ -1,13 +1,13 @@
 ---
 - name: Create user
-  hosts: linux
-  become: yes
+  hosts: all
+  become: no
   vars:
     new_username: resmonitor
     new_password_plain: "cx1@VNresmon"
   tasks:
 
-    - name: Create password
+    - name: Encrypt password
       ansible.builtin.set_fact:
         encrypted_password: "{{ new_password_plain | password_hash('sha512') }}"
 
@@ -17,7 +17,9 @@
         password: "{{ encrypted_password }}"
         shell: /bin/bash
         state: present
-        create_home: yes
-        generate_ssh_key: yes
+        generate_ssh_key: true
         ssh_key_bits: 4096
         ssh_key_file: .ssh/id_rsa
+    
+    - name: Exit session
+      ansible.builtin.meta: reset_connection

@@ -1,0 +1,31 @@
+---CPU Usage---
+%Cpu(s):  2.9 us,  4.3 sy,  0.0 ni, 92.9 id,  0.0 wa,  0.0 hi,  0.0 si,  0.0 st
+
+
+---RAM Usage---
+              total        used        free      shared  buff/cache   available
+Mem:           7666        1594         131         169        5940        5604
+Swap:          4095         370        3725
+
+
+---HDD Usage---
+Filesystem                      Size  Used Avail Use% Mounted on
+devtmpfs                        3.8G     0  3.8G   0% /dev
+tmpfs                           3.8G     0  3.8G   0% /dev/shm
+tmpfs                           3.8G  394M  3.4G  11% /run
+tmpfs                           3.8G     0  3.8G   0% /sys/fs/cgroup
+/dev/mapper/rootvg-rootlv       4.8G  1.5G  3.1G  33% /
+/dev/mapper/rootvg-usrlv         15G  5.1G  9.2G  36% /usr
+/dev/mapper/rootvg-homelv       2.0G   25M  1.8G   2% /home
+/dev/sda1                       2.0G  188M  1.7G  11% /boot
+/dev/mapper/rootvg-optlv        3.8G  541M  3.1G  15% /opt
+/dev/mapper/rootvg-tmplv        3.8G  2.5M  3.6G   1% /tmp
+/dev/mapper/rootvg-varlv        3.8G  1.5G  2.2G  40% /var
+/dev/mapper/datavg-storefilelv  1.5T  1.5T   20G  99% /usr/ebaf/StoreFiles
+/dev/mapper/datavg-leapp        8.7G  8.0K  8.3G   1% /var/lib/leapp
+/dev/mapper/datavg-jbosslv       20G   15G  4.4G  77% /opt/jboss
+/dev/mapper/datavg-dumplv       9.7G  2.3G  6.9G  26% /opt/jboss/eBAF/dump
+/dev/mapper/datavg-loglv         11G  6.7G  3.5G  66% /opt/jboss/eBAF/logs
+//10.165.96.20/BK/10.165.48.1   1.0T  442G  583G  44% /mnt/synclogto96.20
+tmpfs                           767M     0  767M   0% /run/user/3001
+tmpfs                           767M     0  767M   0% /run/user/0

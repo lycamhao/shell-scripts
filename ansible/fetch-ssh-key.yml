@@ -1,0 +1,22 @@
+---
+- name: Fetch SSH key
+  hosts: all
+  become: no
+  vars:
+    new_username: resmonitor
+  tasks:
+
+    - name: Fertch SSH Public Key from {{ new_username }}
+      ansible.builtin.fetch:
+        src: "/home/{{ new_username }}/.ssh/id_rsa.pub"
+        dest: "./ssh_keys/{{ inventory_hostname }}.pub"
+        flat: yes
+
+    - name: Fertch SSH Private Key from {{ new_username }}
+      ansible.builtin.fetch:
+        src: "/home/{{ new_username }}/.ssh/id_rsa"
+        dest: "./ssh_keys/{{ inventory_hostname }}_private_key"
+        flat: yes
+
+    - name: Exit session
+      ansible.builtin.meta: reset_connection

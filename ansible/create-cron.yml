@@ -1,12 +1,11 @@
 ---
 - name: Create cronjob
-  hosts: linux
+  hosts: linux-first
   become: no
   vars:
-    new_username: sys_perf
-    new_password_plain: "cx1@VNP3rf"
-    destination_folder: "/home/sys_perf"
-    script_folder: "scripts/get_resource"
+    username: resmonitor
+    password: "cx1@VNresmon"
+    script_file: "/home/resmonitor/scripts/get_resource/get_resources.sh"
   tasks:
 
     - name: Delete cron job
@@ -18,4 +17,7 @@
     #   ansible.builtin.cron:
     #     name: "##Get resource##"
     #     minute: "*/5"
-    #     job: "/bin/bash {{ destination_folder }}/{{ script_folder }}/get_resources.sh"
+    #     job: "/bin/bash {{ script_file }} > /home/resmonitor/scripts/get_resource/temp/$(date +\%Y-\%m-\%d_\%H:\%M:\%S).log 2>&1"}}"
+
+    - name: Exit session
+      ansible.builtin.meta: reset_connection

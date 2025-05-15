@@ -1,6 +1,6 @@
 ---
 - name: Create user
-  hosts: linux
+  hosts: all
   become: no
   vars:
     new_username: sys_perf
@@ -20,3 +20,6 @@
         src: "./get_resource/settings.properties"
         dest: "{{ destination_folder }}/{{ script_folder }}"
         mode: '0755'
+
+    - name: Exit session
+      ansible.builtin.meta: reset_connection

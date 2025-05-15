@@ -1,8 +1,7 @@
 #!/bin/bash
 
-SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-SAVE_FILE_PATH=${SCRIPT_DIR}/temp
-GET_TIME=$(grep GET_TIME ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+SCRIPT_DIR="$(pwd)"
+SAVE_FILE_PATH=$(grep SAVE_FILE_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
 GET_CPU=$(grep GET_CPU ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
 GET_RAM=$(grep GET_RAM ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
 GET_HDD=$(grep GET_HDD ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
@@ -20,11 +19,11 @@ DATE_TIME=$(date +%Y%m%d-%H%M)
 #     echo "GET_CPU is 1"
 # fi
 
-# if [ -z ${SAVE_FILE_PATH} ]; then
-# 	mkdir ${SAVE_FILE_PATH}
-# fi
+if [ -z ${SAVE_FILE_PATH} ]; then
+	mkdir ${SAVE_FILE_PATH}
+fi
 
-HOST_ADDRESS=$(hostname -I | awk '{print $1}')
+HOST_ADDRESS=$(hostname -I)
 HOST_ADDRESS=${HOST_ADDRESS::-1}
 HOST_NAME=$(hostname)
 
@@ -59,12 +58,11 @@ HOST_NAME=$(hostname)
 # 	echo ${NFS_PACKAGE?};
 # }
 
-rm -rf ${SAVE_FILE_PATH?}/*.log
-
+rm -rf ${SAVE_FILE_PATH?}/${HOST_NAME}.log
 writeToFile(){
 	#checkNFSPackage;
 	if [ ! -z "$1" ]; then
-		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}_${DATE_TIME}.log"
+		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}.log"
 	fi
 }
 
@@ -105,19 +103,6 @@ getHDDUsage(){
 	echo "${hddResult}"
 }
 
-getDateTime(){
-	echo "${DATE_TIME}"
-}
-
-# Get date time
-if [[ $GET_TIME == 1 ]]; then
-	dateTime=$(getDateTime)
-	writeToFile "---Date time (YYYMMDD-HHMM)---"
-	writeToFile "$dateTime"
-	writeToFile "\n"
-fi
-
-# Get CPU Usage
 if [[ $GET_CPU == 1 ]]; then
 	cpuUsage=$(getCpuUsage)
 	writeToFile "---CPU Usage---"
@@ -125,7 +110,6 @@ if [[ $GET_CPU == 1 ]]; then
 	writeToFile "\n"
 fi
 
-#Get RAM Usage
 if [[ $GET_RAM == 1 ]]; then
 	ramUsage=$(getRamUsage)
 	writeToFile "---RAM Usage---"
@@ -133,7 +117,6 @@ if [[ $GET_RAM == 1 ]]; then
 	writeToFile "\n"
 fi
 
-#Get HDD Usage
 if [[ $GET_HDD == 1 ]]; then
 	hddUsage=$(getHDDUsage)
 	writeToFile "---HDD Usage---"
@@ -150,7 +133,7 @@ if [[ $SFTP_COPY == 1 ]]; then
 	sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
 lcd "${SAVE_FILE_PATH}"
 cd "${SFTP_PATH}"
-put ${HOST_NAME}_${DATE_TIME}.log
+put ${HOST_NAME}.log
 bye
 EOF
 fi

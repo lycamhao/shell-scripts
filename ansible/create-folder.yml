@@ -1,11 +1,10 @@
 ---
-- name: Create user
-  hosts: linux
+- name: Create folders 
+  hosts: linux-first
   become: no
   vars:
-    new_username: sys_perf
-    new_password_plain: "cx1@VNP3rf"
-    destination_folder: "/home/sys_perf"
+    username: resmonitor
+    destination_folder: "/home/resmonitor"
     script_folder: "scripts"
   tasks:
 
@@ -26,3 +25,6 @@
         path: "{{ destination_folder }}/{{ script_folder }}/get_resource/temp"
         state: directory
         mode: '0755'
+    
+    - name: Exit session
+      ansible.builtin.meta: reset_connection

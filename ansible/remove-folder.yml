@@ -1,6 +1,6 @@
 ---
 - name: Create user
-  hosts: linux
+  hosts: all
   become: no
   vars:
     new_username: sys_perf
@@ -13,3 +13,6 @@
       ansible.builtin.file:
         path: "{{ destination_folder }}/{{ script_folder }}"
         state: absent
+
+    - name: Exit session
+      ansible.builtin.meta: reset_connection
