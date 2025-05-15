@@ -65,3 +65,11 @@ qm destroy 115 --purge
 # Show vm config
 qm config 101
 qm config 115
+
+# List snapshots
+qm listsnapshot $id
+id=102 && qm listsnapshot $id
+id=102 && snapshot_name="HADR-START" && qm delsnapshot $id $snapshot_name
+
+# Suspend VM
+qm suspend $id --skiplock

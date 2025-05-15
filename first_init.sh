@@ -7,6 +7,7 @@ idev=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' '
 idevTotal=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' ' | wc -l)
 idevList=$(nmcli device status | grep ethernet | awk -F " " '{print $1}' | tr -d ' ') 
 idevStatus=$(nmcli device status | grep ethernet | awk -F " " '{print $3}' | tr -d ' ')
+serverList=$(grep "$inputParam1" $configFile | grep -oP "server=\K[^$]+" | tr -d ' ')
 
 # Change machine ID
 doChangeMachineID(){
@@ -281,7 +282,7 @@ if [ -f "$configFile" ] && [ ! -z $1 ];then
     doChangeMachineID
     
     # Change IP and hostname
-    doChangeHostName
+    # doChangeHostName
 
     # Change IP
     doChangeIP

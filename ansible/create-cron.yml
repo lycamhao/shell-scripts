@@ -16,7 +16,7 @@
       ansible.builtin.cron:
         name: "##Get resource##"
         minute: "*/5"
-        job: /bin/bash {{ script_file }}> /home/{{ username }}/scripts/get_resource/temp/$(date +\%Y-\%m-\%d_\%H:\%M:\%S).log 2>&1
+        job: /bin/bash {{ script_file }}
 
     - name: Exit session
       ansible.builtin.meta: reset_connection

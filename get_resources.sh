@@ -1,63 +1,33 @@
 #!/bin/bash
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-SAVE_FILE_PATH=${SCRIPT_DIR}/temp
-GET_TIME=$(grep GET_TIME ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-GET_CPU=$(grep GET_CPU ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-GET_RAM=$(grep GET_RAM ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-GET_HDD=$(grep GET_HDD ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-FORMATED_LOG=$(grep FORMATED_LOG ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SCP_PATH=$(grep SCP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SCP_HOST=$(grep SCP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SCP_COPY=$(grep SCP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SFTP_COPY=$(grep SFTP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SFTP_USER=$(grep SFTP_USER ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SFTP_PATH=$(grep SFTP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SFTP_HOST=$(grep SFTP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
-SFTP_LIMIT_FILES=$(grep SFTP_LIMIT_FILES ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SAVE_FILE_PATH="${SCRIPT_DIR}"/temp
+GET_TIME=$(grep GET_TIME "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_CPU=$(grep GET_CPU "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_RAM=$(grep GET_RAM "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_HDD=$(grep GET_HDD "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+FORMATED_LOG=$(grep FORMATED_LOG "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_PATH=$(grep SCP_PATH "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_HOST=$(grep SCP_HOST "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_COPY=$(grep SCP_COPY "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_COPY=$(grep SFTP_COPY "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_USER=$(grep SFTP_USER "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_PATH=$(grep SFTP_PATH "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_HOST=$(grep SFTP_HOST "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_LIMIT_FILES=$(grep SFTP_LIMIT_FILES "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+MINUTE_TO_KEEP_FILES=$(grep MINUTE_TO_KEEP_FILES "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
 DATE_TIME=$(date +%Y%m%d-%H%M)
 
 HOST_ADDRESS=$(hostname -I | awk '{print $1}')
 HOST_ADDRESS=${HOST_ADDRESS::-1}
 HOST_NAME=$(hostname)
 
-# # Check SAVE_FILE_PATH for the resources's log
-# # If $1 not empty, SAVE_FILE_PATH will be $1
-# if [ ! -z $1 ];then
-# 	SAVE_FILE_PATH=$1
-# fi
-
-# # Check NFS_PATH for upload resources's log to NFS Server
-# # If $2 not empty, NFS_PATH will be $2
-# if [ ! -z $2 ];then
-# 	NFS_PATH=$2
-# fi
-
-# if [ ! -d "/tmp/nfs" ]; then
-# 	mkdir /tmp/nfs
-# 	sudo mount -t nfs -o rw 192.168.100.253:/mnt/ISO /tmp/nfs
-# else
-# 	sudo mount -t nfs -o rw 192.168.100.253:/mnt/ISO /tmp/nfs
-# fi
-
-# checkNFSPackage(){
-# 	OS_REL="`cat /etc/*-release | grep -e '\bID=' | awk -F= '{print $2}'`"
-# 	if [ "${OS_REL?}" = "ubuntu" ] || [ "${OS_REL?}" = "debian"  ]; then
-# 		NFS_PACKAGE="`dpkg --list | grep 'nfs-common' | awk '{print $2}'`"
-# 	elif [ "${OS_REL?}" = "centos" ] || [ "${OS_REL?}" = "fedora" ]; then
-# 		NFS_PACKAGE="`rpm -qa | grep 'nfs-util'`"
-# 	else
-# 		NFS_PACKAGE="NO"
-# 	fi
-# 	echo ${NFS_PACKAGE?};
-# }
-
-COUNT_FILE=$(find $SAVE_FILE_PATH -type f -name "*.log" -mmin +30 | wc -l | tr -d ' ')
+COUNT_FILE=$(find "${SAVE_FILE_PATH}" -type f -name "*.log" -mmin +"${MINUTE_TO_KEEP_FILES}" | wc -l | tr -d ' ')
 if [[ $COUNT_FILE -gt 1 ]]; then
-	find $SAVE_FILE_PATH -type f -name "*.log" -mmin +30 -exec rm -rf {} \;
+	find "${SAVE_FILE_PATH}" -type f -name "*.log" -mmin +"${MINUTE_TO_KEEP_FILES}" -exec rm -rf {} \;
 sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
-rm ${SFTP_PATH}/${HOST_NAME}_*.log
+rm "${SFTP_PATH}"/"${HOST_NAME}"_*.log
 bye
 EOF
 fi
@@ -85,14 +55,14 @@ getCpuUsage(){
 getRamUsage(){
 	ramResult=$(free -m)
 	if [[ $FORMATED_LOG == 1 ]]; then
-		output="`free -m | grep Mem:`"
-        totalMem="`echo "${output}" | awk '{print $2}'`"
-        usedMem="`echo "${output}" | awk '{print $3}'`"
+		output="$(free -m | grep Mem:)"
+        totalMem="$(echo "${output}" | awk '{print $2}')"
+        usedMem="$(echo "${output}" | awk '{print $3}')"
         #freeMem=$(echo "$output | awk '{print $4});
         #sharedMem=$(echo "$output | awk '{print $5});
         #cacheMem=$(echo "$output | awk '{print $5});
         #availMem=$(echo "$output | awk '{print $5});
-        ramResult="`expr ${usedMem} \* 100 / ${totalMem}`";
+        ramResult="$(expr "${usedMem}" \* 100 / "${totalMem}")";
 	fi 
 	echo "${ramResult}"
 }
@@ -142,7 +112,7 @@ fi
 
 #SCP Copy
 if [[ $SCP_COPY == 1 ]]; then
-	scp -i ./${SSH_PRIVATE_KEY} "${SAVE_FILE_PATH}/${HOST_NAME}_${HOST_ADDRESS}.log" "${SCP_USER}"@"${SCP_HOST}":"${SCP_PATH}"
+	scp -i ./"${SSH_PRIVATE_KEY}" "${SAVE_FILE_PATH}/${HOST_NAME}_${HOST_ADDRESS}.log" "${SCP_USER}"@"${SCP_HOST}":"${SCP_PATH}"
 fi
 
 # SFTP Delete
@@ -150,7 +120,8 @@ fi
 sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
 lcd "${SAVE_FILE_PATH}"
 cd "${SFTP_PATH}"
-put ${HOST_NAME}_*.log
+# put "${HOST_NAME}"_"${DATE_TIME}".log
+put "${HOST_NAME}"_*.log
 bye
 EOF
 fi
