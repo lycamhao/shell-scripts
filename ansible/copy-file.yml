@@ -1,12 +1,11 @@
 ---
-- name: Create user
+- name: Copy nessesary files to machine
   hosts: all
   become: no
   vars:
-    new_username: sys_perf
-    new_password_plain: "cx1@VNP3rf"
-    destination_folder: "/home/sys_perf"
-    script_folder: "scripts/get_resource"
+    username: resmonitor
+    destination_folder: /home/{{ username }}
+    script_folder: scripts/get_resource
   tasks:
 
     - name: Copy get_resources.sh to "{{ script_folder }}" folder

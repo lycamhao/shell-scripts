@@ -2,27 +2,21 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 SAVE_FILE_PATH=${SCRIPT_DIR}/temp
-GET_TIME=$(grep GET_TIME ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-GET_CPU=$(grep GET_CPU ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-GET_RAM=$(grep GET_RAM ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-GET_HDD=$(grep GET_HDD ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-FORMATED_LOG=$(grep FORMATED_LOG ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_PATH=$(grep SCP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_HOST=$(grep SCP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SCP_COPY=$(grep SCP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SFTP_COPY=$(grep SFTP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SFTP_USER=$(grep SFTP_USER ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SFTP_PATH=$(grep SFTP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
-SFTP_HOST=$(grep SFTP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d '[:space:]')
+GET_TIME=$(grep GET_TIME ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_CPU=$(grep GET_CPU ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_RAM=$(grep GET_RAM ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+GET_HDD=$(grep GET_HDD ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+FORMATED_LOG=$(grep FORMATED_LOG ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_PATH=$(grep SCP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SSH_PRIVATE_KEY=$(grep SSH_PRIVATE_KEY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_HOST=$(grep SCP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SCP_COPY=$(grep SCP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_COPY=$(grep SFTP_COPY ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_USER=$(grep SFTP_USER ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_PATH=$(grep SFTP_PATH ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_HOST=$(grep SFTP_HOST ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
+SFTP_LIMIT_FILES=$(grep SFTP_LIMIT_FILES ${SCRIPT_DIR}/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
 DATE_TIME=$(date +%Y%m%d-%H%M)
-# if [[ $GET_CPU == 1 ]]; then
-#     echo "GET_CPU is 1"
-# fi
-
-# if [ -z ${SAVE_FILE_PATH} ]; then
-# 	mkdir ${SAVE_FILE_PATH}
-# fi
 
 HOST_ADDRESS=$(hostname -I | awk '{print $1}')
 HOST_ADDRESS=${HOST_ADDRESS::-1}
@@ -59,10 +53,16 @@ HOST_NAME=$(hostname)
 # 	echo ${NFS_PACKAGE?};
 # }
 
-rm -rf ${SAVE_FILE_PATH?}/*.log
+COUNT_FILE=$(find $SAVE_FILE_PATH -type f -name "*.log" -mmin +30 | wc -l | tr -d ' ')
+if [[ $COUNT_FILE -gt 1 ]]; then
+	find $SAVE_FILE_PATH -type f -name "*.log" -mmin +30 -exec rm -rf {} \;
+sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
+rm ${SFTP_PATH}/${HOST_NAME}_*.log
+bye
+EOF
+fi
 
 writeToFile(){
-	#checkNFSPackage;
 	if [ ! -z "$1" ]; then
 		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}_${DATE_TIME}.log"
 	fi
@@ -145,12 +145,12 @@ if [[ $SCP_COPY == 1 ]]; then
 	scp -i ./${SSH_PRIVATE_KEY} "${SAVE_FILE_PATH}/${HOST_NAME}_${HOST_ADDRESS}.log" "${SCP_USER}"@"${SCP_HOST}":"${SCP_PATH}"
 fi
 
-# SFTP Copy
-if [[ $SFTP_COPY == 1 ]]; then
-	sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
+# SFTP Delete
+	if [[ $SFTP_COPY == 1 ]]; then
+sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
 lcd "${SAVE_FILE_PATH}"
 cd "${SFTP_PATH}"
-put ${HOST_NAME}_${DATE_TIME}.log
+put ${HOST_NAME}_*.log
 bye
 EOF
 fi

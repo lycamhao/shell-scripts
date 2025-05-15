@@ -1,10 +1,10 @@
 ---
 - name: Create folders 
-  hosts: linux-first
+  hosts: all
   become: no
   vars:
     username: resmonitor
-    destination_folder: "/home/resmonitor"
+    destination_folder: "/home/{{ username }}"
     script_folder: "scripts"
   tasks:
 

@@ -1,5 +1,5 @@
 ---
-- name: Create user
+- name: Create new user
   hosts: all
   become: no
   vars:
@@ -10,7 +10,7 @@
     - name: Encrypt password
       ansible.builtin.set_fact:
         encrypted_password: "{{ new_password_plain | password_hash('sha512') }}"
-
+    # Create user
     - name: Create user {{ new_username }}
       ansible.builtin.user:
         name: "{{ new_username }}"
@@ -20,6 +20,19 @@
         generate_ssh_key: true
         ssh_key_bits: 4096
         ssh_key_file: .ssh/id_rsa
-    
+
+    #Fetch SSH key 
+    - name: Fertch SSH Public Key from {{ new_username }}
+      ansible.builtin.fetch:
+        src: "/home/{{ new_username }}/.ssh/id_rsa.pub"
+        dest: "./ssh_keys/{{ inventory_hostname }}.pub"
+        flat: yes
+    - name: Fertch SSH Private Key from {{ new_username }}
+      ansible.builtin.fetch:
+        src: "/home/{{ new_username }}/.ssh/id_rsa"
+        dest: "./ssh_keys/{{ inventory_hostname }}_private_key"
+        flat: yes
+
+    # Exit session
     - name: Exit session
       ansible.builtin.meta: reset_connection

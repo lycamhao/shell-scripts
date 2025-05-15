@@ -1,11 +1,10 @@
 ---
 - name: Create cronjob
-  hosts: linux-first
+  hosts: all
   become: no
   vars:
     username: resmonitor
-    password: "cx1@VNresmon"
-    script_file: "/home/resmonitor/scripts/get_resource/get_resources.sh"
+    script_file: /home/{{ username }}/scripts/get_resource/get_resources.sh
   tasks:
 
     - name: Delete cron job
@@ -13,11 +12,11 @@
         name: "##Get resource##"
         state: "absent"
 
-    # - name: Create cron job
-    #   ansible.builtin.cron:
-    #     name: "##Get resource##"
-    #     minute: "*/5"
-    #     job: "/bin/bash {{ script_file }} > /home/resmonitor/scripts/get_resource/temp/$(date +\%Y-\%m-\%d_\%H:\%M:\%S).log 2>&1"}}"
+    - name: Create cron job
+      ansible.builtin.cron:
+        name: "##Get resource##"
+        minute: "*/5"
+        job: /bin/bash {{ script_file }}> /home/{{ username }}/scripts/get_resource/temp/$(date +\%Y-\%m-\%d_\%H:\%M:\%S).log 2>&1
 
     - name: Exit session
       ansible.builtin.meta: reset_connection
