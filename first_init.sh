@@ -39,25 +39,25 @@ doUpdate(){
 
 # Install related db2 package Function
 doInstallPkg(){
-    nfsutil=$(rpm -q nfs-utils)
-    libstdc_i686=$(rpm -q libstdc++.i686)
-    pam_i686=$(rpm -q pam.i686)
-    sysstat=$(rpm -q sysstat)
-    mksh=$(rpm -q mksh)
-    perlinterpreter=$(rpm -q perl-interpreter)
-    perlsyslog=$(rpm -q perl-Sys-Syslog)
-    perlnetping=$(rpm -q perl-Net-Ping)
-    perlthreadqueue=$(rpm -q perl-Thread-Queue)
-    make=$(rpm -q make)
-    elfutils=$(rpm -q elfutils-libelf-devel)
-    patch=$(rpm -q patch)
-    m4=$(rpm -q m4)
-    kerneldevel=$(rpm -q kernel-devel)
-    python=$(rpm -q python36)
-    perlthreadqueue=$(rpm -q perl)
-    gcc_cpp=$(rpm -q gcc-c++)
-    ksh=$(rpm -q ksh)
-
+    nfsutil=$(rpm -qa nfs-utils)
+    libstdc_i686=$(rpm -qa libstdc++.i686)
+    pam_i686=$(rpm -qa pam.i686)
+    sysstat=$(rpm -qa sysstat)
+    mksh=$(rpm -qa mksh)
+    perlinterpreter=$(rpm -qa perl-interpreter)
+    perlsyslog=$(rpm -qa perl-Sys-Syslog)
+    perlnetping=$(rpm -qa perl-Net-Ping)
+    perlthreadqueue=$(rpm -qa perl-Thread-Queue)
+    make=$(rpm -qa make)
+    elfutils=$(rpm -qa elfutils-libelf-devel)
+    patch=$(rpm -qa patch)
+    m4=$(rpm -qa m4)
+    kerneldevel=$(rpm -qa kernel-devel)
+    python=$(rpm -qa python36)
+    perlthreadqueue=$(rpm -qa perl)
+    gcc_cpp=$(rpm -qa gcc-c++)
+    ksh=$(rpm -qa ksh)
+    python3_dnf=$(rpm -qa python3-dnf-plugin-versionlock)
     if [ -z "$nfsutil" ];then
         yum install -y nfs-utils
     fi
@@ -111,6 +111,9 @@ doInstallPkg(){
     fi
     if [ -z "$ksh" ];then
         yum install -y ksh
+    fi
+    if [ -z "$python3_dnf" ];then
+        yum install -y python3-dnf-plugin-versionlock
     fi
 }
 

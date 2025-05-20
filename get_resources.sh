@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Các biến khởi tạo
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 SAVE_FILE_PATH="${SCRIPT_DIR}"/temp
 GET_TIME=$(grep GET_TIME "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
@@ -19,12 +20,14 @@ SFTP_LIMIT_FILES=$(grep SFTP_LIMIT_FILES "${SCRIPT_DIR}"/settings.properties | a
 MINUTE_TO_KEEP_FILES=$(grep MINUTE_TO_KEEP_FILES "${SCRIPT_DIR}"/settings.properties | awk -F'[=]' '{print $2}' | tr -d ' ')
 DATE_TIME=$(date +%Y%m%d-%H%M)
 
-HOST_ADDRESS=$(hostname -I | awk '{print $1}')
-HOST_ADDRESS=${HOST_ADDRESS::-1}
-HOST_NAME=$(hostname)
+# Lấy hostname và địa chỉ IP của host
+HOST_ADDRESS=$(hostname -I | awk '{print $1}') # Địa chia IP
+HOST_ADDRESS=${HOST_ADDRESS::-1} # Bỏ dấu . ở cuối chuỗi
+HOST_NAME=$(hostname) # Lấy hostname
 
+# Đém số file log có thời gian cũ hơn tham số MINUTE_TO_KEEP_FILES trong file settings.properties
 COUNT_FILE=$(find "${SAVE_FILE_PATH}" -type f -name "*.log" -mmin +"${MINUTE_TO_KEEP_FILES}" | wc -l | tr -d ' ')
-if [[ $COUNT_FILE -gt 1 ]]; then
+if [[ $COUNT_FILE -gt 1 ]]; then # Nếu phát hiện có nhiều hơn 1 file log cũ hơn MINUTE_TO_KEEP_FILES thì xóa file đi
 	find "${SAVE_FILE_PATH}" -type f -name "*.log" -mmin +"${MINUTE_TO_KEEP_FILES}" -exec rm -rf {} \;
 sftp "${SFTP_USER}"@"${SFTP_HOST}" <<EOF
 rm "${SFTP_PATH}"/"${HOST_NAME}"_*.log
@@ -32,9 +35,10 @@ bye
 EOF
 fi
 
+# Write to file function	
 writeToFile(){
 	if [ ! -z "$1" ]; then
-		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}_${DATE_TIME}.log"
+		echo -e "$1" >> "${SAVE_FILE_PATH}/${HOST_NAME}_${DATE_TIME}.log" # Write content to file with $1 parameter
 	fi
 }
 
