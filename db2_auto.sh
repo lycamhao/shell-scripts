@@ -9,7 +9,7 @@ cp /nfs/v11.5.9_linuxx64_server_dec.tar ./
 tar -xvf v11.5.9_linuxx64_server_dec.tar
 cd server_dec
 ./db2prereqcheck -v 11.5.9.0
-./db2_install -b /lv-db2install -p SERVER -t NOTSAMP
+./db2_install -b /lv-db2install -p SERVER -f NOTSAMP
 
 # Create Instance
 cd /lv-db2install/instance/
@@ -43,6 +43,11 @@ db2 create database $db on /lv-db2data/$db
 # Basic setting for db2 database
 mkdir /lv-db2arclogs/$db
 mkdir /lv-db2txlogs/$db
+
+# Optional: Create sample database
+db2sampl -name $db -dbpath /lv-db2data/$db
+
+# Setting after create database
 db2 update db cfg for $db USING LOGARCHMETH1 DISK:/lv-db2arclogs/$db
 db2 update db cfg for $db USING LOGARCHCOMPR1 ON
 db2 update db cfg for $db USING NEWLOGPATH /lv-db2txlogs/$db
@@ -51,7 +56,7 @@ db2 update db cfg for $db USING INDEXREC RESTART
 db2 update db cfg for $db USING LOGFILSIZ 10024
 db2 update db cfg for $db USING LOGPRIMARY 20
 
-# HADR setting for db2 crm database
+# HADR setting for db2 database
 db2 update db cfg for $db USING HADR_LOCAL_HOST DB2-HADR-2
 db2 update db cfg for $db USING HADR_REMOTE_HOST DB2-HADR-1
 db2 update db cfg for $db USING HADR_LOCAL_SVC 52601
@@ -70,14 +75,7 @@ echo "alias getdbmcfg='db2 get dbm cfg'" >> .bashrc
 echo "alias getexec='db2 list application show detail | grep -v Wait | grep -v "Connect Completed"'" >> .bashrc
 echo "alias getid='db2 get snapshot for application agentid'" >> .bashrc
 echo "alias getlock='db2 list application show detail | grep Lock-wait | sort -k 10'" >> .bashrc
-echo "alias getlogs='db2pd -db $DB -logs'" >> .bashrc
-echo "alias gettrans='db2pd -db $DB -transaction'" >> .bashrc
 echo "alias listapp='db2 list application'" >> .bashrc
-echo "alias onswitch='db2 update monitor switches for $DB using bufferpool on lock on table on statement on uow on sort on timestamp on'" >> .bashrc
-echo "alias resetswitch='db2 reset monitor for database $DB'" >> .bashrc
-echo "alias ckhadr='db2pd -db $DB -hadr'" >> .bashrc
-echo "alias starthadr='db2 start hadr on db $DB as $HADR_ROLE'" >> .bashrc
-echo "alias stophar='db2 stop hadr on db $DB'" >> .bashrc
 source .bashrc
 
 # Create CRM database
