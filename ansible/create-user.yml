@@ -2,9 +2,11 @@
 - name: Create new user
   hosts: all
   become: no
+  vars_files: 
+    - secrets.yml
   vars:
     new_username: resmonitor
-    new_password_plain: "cx1@VNresmon"
+    new_password_plain: "{{ resmon_password }}"
   tasks:
 
     - name: Encrypt password

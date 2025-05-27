@@ -3,32 +3,32 @@
   hosts: all
   become: no
   vars:
-    remove_username: sys_perf
+    username: resmonitor
   tasks:
 
-    - name: Remove user {{ remove_username }}
+    - name: Remove user {{ username }}
       ansible.builtin.shell: |
-        pkill -u {{ remove_username }} || true
+        pkill -u {{ username }} || true
 
     - name: Wait for processes to finish
       ansible.builtin.wait_for:
         timeout: 3
     
-    - name: Remove user {{ remove_username }}
+    - name: Remove user {{ username }}
       ansible.builtin.user:
-        name: "{{ remove_username }}"
+        name: "{{ username }}"
         state: absent
         remove: true
       register: user_removal_result
 
     - name: Check if user removal was successful
       ansible.builtin.debug:
-        msg: "User {{ remove_username }} removed successfully."
+        msg: "User {{ username }} removed successfully."
       when: user_removal_result is changed
 
-    - name: Remove {{ remove_username }} home directory
+    - name: Remove {{ username }} home directory
       ansible.builtin.file:
-        path: "/home/{{ remove_username }}"
+        path: "/home/{{ username }}"
         state: absent
 
     - name: Exit session

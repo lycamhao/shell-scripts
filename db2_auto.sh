@@ -57,14 +57,13 @@ db2 update db cfg for $db USING LOGFILSIZ 10024
 db2 update db cfg for $db USING LOGPRIMARY 20
 
 # HADR setting for db2 database
-db2 update db cfg for $db USING HADR_LOCAL_HOST DB2-HADR-2
-db2 update db cfg for $db USING HADR_REMOTE_HOST DB2-HADR-1
+db2 update db cfg for $db USING HADR_LOCAL_HOST DB2-REDHAT-1
+db2 update db cfg for $db USING HADR_REMOTE_HOST DB2-REDHAT-2
 db2 update db cfg for $db USING HADR_LOCAL_SVC 52601
 db2 update db cfg for $db USING HADR_REMOTE_SVC 52601
 db2 update db cfg for $db USING HADR_REMOTE_INST DB2INST1
 db2 update db cfg for $db USING HADR_SYNCMODE SYNC
 db2 update db cfg for $db USING HADR_PEER_WINDOW 60
-db2set 
 
  # Add alias to .bashrc
 su - db2inst1
@@ -85,3 +84,4 @@ db2sampl -name $db -dbpath /lv-db2data/$db
 db2 terminate
 db2stop
 db2start
+db2set 

@@ -14,7 +14,9 @@ all:
           10.165.68.2:
           10.165.68.51:
           10.165.68.52:
+  vars_files:
+    - secrets.yml
   vars:
-    ansible_user: resmonitor
-    ansible_password: "cx1@VNresmon"
+    ansible_user: "resmonitor"
+    ansible_password: "{{ resmon_password }}"
     ansible_ssh_host_key_checking: false
