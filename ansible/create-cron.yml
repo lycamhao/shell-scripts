@@ -1,13 +1,16 @@
----
-- name: Create cronjob
+- name: Create cron job for resource monitoring
   hosts: all
   become: no
+  vars_files:
+    - secrets.yml
   vars:
+    ansible_user: "{{ admin_user }}"
+    ansible_password: "{{ admin_password }}"
+    ansible_ssh_host_key_checking: false
     username: resmonitor
     script_file: /home/{{ username }}/scripts/get_resource/get_resources.sh
   tasks:
-
-    - name: Delete cron job
+    - name: Delete existed cron job
       ansible.builtin.cron:
         name: "##Get resource##"
         state: "absent"

@@ -1,13 +1,16 @@
----
-- name: Create folders 
+- name: Create folder for resource monitoring
   hosts: all
   become: no
+  vars_files:
+    - secrets.yml
   vars:
-    username: resmonitor
+    ansible_user: "{{ normal_user }}"
+    ansible_password: "{{ user_password }}"
+    ansible_ssh_host_key_checking: false
+    username: "{{ normal_user }}"
     destination_folder: "/home/{{ username }}"
     script_folder: "scripts"
   tasks:
-
     - name: Create "{{ script_folder }}" folder
       ansible.builtin.file:
         path: "{{ destination_folder }}/{{ script_folder }}"
